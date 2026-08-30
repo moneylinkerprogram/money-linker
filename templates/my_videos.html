@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Money Linker - My Videos</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #0f172a; color: #fff; margin: 0; padding-bottom: 70px; }
+        .top-bar { background: #1e293b; padding: 15px; text-align: center; }
+        .container { padding: 20px; max-width: 600px; margin: auto; }
+        .card { background: #1e293b; padding: 20px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+        .video-card { background: #334155; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
+        .btn-watch { background: #64748b; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: not-allowed; font-weight: bold; width: 100%; margin-top: 10px; }
+        .btn-ready { background: #059669; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 10px; }
+        .btn-watched { background: #1e293b; color: #38bdf8; border: none; padding: 10px 15px; border-radius: 5px; width: 100%; margin-top: 10px; cursor: default; font-weight: bold; }
+        .badge { background: #059669; padding: 3px 8px; border-radius: 4px; font-size: 12px; }
+        /* FIXED BOTTOM NAVIGATION BAR */
+        .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: #1e293b; display: flex; justify-content: space-around; padding: 12px 0; border-top: 1px solid #334155; z-index: 1000; }
+        .nav-item { color: #94a3b8; text-decoration: none; font-size: 14px; font-weight: bold; }
+        .nav-item.active { color: #059669; }
+    </style>
+</head>
+<body>
+
+<div class="top-bar">
+    <h1><span>Money</span> Linker</h1>
+</div>
+
+<div class="container">
+    <div class="card">
+        <h2>My Daily Videos</h2>
+        <p>Watch each video completely to unlock your <strong>5 Ksh</strong> reward. (Videos reset daily at 00:00 AM)</p>
+        <p>Current Balance: <span style="color: #059669; font-weight: bold;" id="user-balance">{{ balance }}</span> Ksh</p>
+    </div>
+
+    {% if videos %}
+        {% for v in videos %}
+        <div class="video-card" id="card-{{ v.id }}">
+            <h3>{{ v.title }}</h3>
+            <p><small>Type: {{ v.video_type }} | Duration: {{ v.duration }}s</small></p>
+
+            <div id="status-container-{{ v.id }}" style="margin-bottom: 10px;">
+                {% if v.is_watched %}
+                    <span class="badge">Claimed ✅</span>
+                    <span style="font-size: 12px; color: #38bdf8; margin-left: 8px;">(Reward Claimed • Replay Freely)</span>
+                {% endif %}
+            </div>
+
+            <!-- Video Player with Single Play, Anti-Skip, and Completion Tracking -->
+            {% if v.video_type == 'link' %}
+                <div style="position:relative; padding-bottom:56.23%; height:0; overflow:hidden; margin-bottom: 10px;">
+                    <iframe src="{{ v.video_source }}" style="position:absolute; top:0; left:0; width:100%; height:100%;" frameborder="0" allowfullscreen></iframe>
+                </div>
+            {% else %}
+                <video width="100%" controls id="video-{{ v.id }}" 
+                       onplay="pauseOtherVideos(this)"
+                       ontimeupdate="preventSkipping(this, '{{ v.id }}')" 
+                       onended="markVideoFinished('{{ v.id }}')" 
+                       style="margin-bottom: 10px;">
+                    <source src="{{ url_for('static', filename='uploads/' + v.video_source) }}" type="video/mp4">
+                    Your browser does not support the video tag.
+                </video>
+            {% endif %}
+
+            <!-- Dynamic Button State -->
+            {% if not v.is_watched %}
+                <button class="btn-watch" id="btn-{{ v.id }}" disabled>
+                    Watch full video to unlock reward
+                </button>
+            {% else %}
+                <button class="btn-watched" disabled>
+                    Claimed ✅
+                </button>
+            {% endif %}
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="card">
+            <p>No videos available right now. Check back later!</p>
+        </div>
+    {% endif %}
+</div>
+
+<!-- FIXED BOTTOM NAVIGATION BAR -->
+<div class="bottom-nav">
+    <a href="/" class="nav-item">Home</a>
+    <a href="/my-videos" class="nav-item active">My videos</a>
+    <a href="/account" class="nav-item">Account</a>
+    <a href="/profile" class="nav-item">My profile</a>
+</div>
+
+
+<!-- Custom Deposit Modal Popup -->
+<div id="depositModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15, 23, 42, 0.85); z-index:2000; justify-content:center; align-items:center; padding:20px;">
+    <div style="background:#1e293b; padding:25px; border-radius:14px; max-width:400px; width:100%; text-align:center; border:1px solid #334155; box-shadow:0 10px 25px rgba(0,0,0,0.5);">
+        <div style="font-size:36px; margin-bottom:10px;">🔒</div>
+        <h3 style="color:#38bdf8; margin-bottom:12px; font-size:20px;">Deposit Required to Unlock</h3>
+        <p style="color:#cbd5e1; font-size:14px; line-height:1.5; margin-bottom:20px;">
+            To start watching videos and earning rewards, you need to deposit a minimum of <strong>100 Ksh</strong> to your account and get it approved.
+        </p>
+        <div style="display:flex; gap:10px;">
+            <button onclick="closeDepositModal()" style="flex:1; background:#334155; color:#fff; border:none; padding:12px; border-radius:8px; font-weight:bold; cursor:pointer;">Cancel</button>
+            <a href="/deposit" style="flex:1; background:#059669; color:#fff; text-decoration:none; padding:12px; border-radius:8px; font-weight:bold; display:inline-block; text-align:center;">Deposit Now</a>
+        </div>
+    </div>
+</div>
+
+
+
+
+<script>
+let totalDeposited = {{ total_deposited | tojson }};
+
+function checkDepositGuard() {
+    if (totalDeposited < 100) {
+        document.getElementById('depositModal').style.display = 'flex';
+        return false;
+    }
+    return true;
+}
+
+function closeDepositModal() {
+    document.getElementById('depositModal').style.display = 'none';
+}
+
+// Intercept video play attempts if under 100 Ksh
+document.addEventListener("DOMContentLoaded", function() {
+    const allVideos = document.querySelectorAll('video');
+    allVideos.forEach(video => {
+        video.addEventListener('play', function(e) {
+            if (!checkDepositGuard()) {
+                video.pause();
+                video.currentTime = 0;
+            }
+        });
+    });
+});
+
+function pauseOtherVideos(currentVideo) {
+    if (!checkDepositGuard()) {
+        currentVideo.pause();
+        return;
+    }
+
+    const allVideos = document.querySelectorAll('video');
+    allVideos.forEach(v => {
+        if (v !== currentVideo) {
+            v.pause();
+        }
+    });
+}
+
+let maxWatchedTime = {};
+
+function preventSkipping(video, videoId) {
+    if (!checkDepositGuard()) {
+        video.pause();
+        return;
+    }
+
+    if (!maxWatchedTime[videoId]) {
+        maxWatchedTime[videoId] = 0;
+    }
+
+    if (video.currentTime > maxWatchedTime[videoId] + 1.5) {
+        video.currentTime = maxWatchedTime[videoId];
+    } else {
+        if (video.currentTime > maxWatchedTime[videoId]) {
+            maxWatchedTime[videoId] = video.currentTime;
+        }
+    }
+}
+</script>
+
+
+
+
+
+
+
+</body>
+</html>

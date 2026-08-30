@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Manage Videos</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background: #0f172a; color: #f8fafc; padding-bottom: 50px; }
+        .admin-nav { display: flex; background: #1e293b; border-bottom: 1px solid #334155; overflow-x: auto; }
+        .admin-nav a { flex: 1; padding: 15px 20px; text-align: center; color: #94a3b8; text-decoration: none; font-weight: 600; white-space: nowrap; }
+        .admin-nav a.active, .admin-nav a:hover { color: #fff; background: #059669; }
+        .container { max-width: 800px; margin: 30px auto; padding: 0 15px; }
+        h2 { margin-bottom: 20px; color: #38bdf8; }
+        .form-card { background: #1e293b; padding: 20px; border-radius: 8px; border: 1px solid #334155; margin-bottom: 30px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-size: 14px; color: #94a3b8; }
+        input, select { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #475569; background: #0f172a; color: #fff; font-size: 14px; }
+        button { background: #059669; color: white; padding: 12px 20px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; }
+        button:hover { background: #047857; }
+        .video-item { background: #1e293b; padding: 15px; border-radius: 6px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #334155; }
+        .delete-btn { background: #ef4444; color: white; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 12px; font-weight: bold; }
+    </style>
+    <script>
+        function toggleUploadFields() {
+            let method = document.getElementById("upload_method").value;
+            document.getElementById("link_field").style.display = (method === "link") ? "block" : "none";
+            document.getElementById("file_field").style.display = (method === "file") ? "block" : "none";
+        }
+    </script>
+</head>
+<body>
+
+<div class="admin-nav">
+    <a href="/admin/dashboard">Dashboard</a>
+    <a href="/admin/videos" class="active">Videos</a>
+    <a href="/admin/users">Users</a>
+    <a href="/admin/requests">Request</a>
+    <a href="/admin/reports">Reports</a>
+</div>
+
+<div class="container">
+    <h2>Upload New Video</h2>
+    
+    <div class="form-card">
+        <form method="POST" enctype="multipart/form-data">
+            <div class="form-group">
+                <label>Video Title</label>
+                <input type="text" name="title" required placeholder="Enter video title">
+            </div>
+
+            <div class="form-group">
+                <label>Upload Method</label>
+                <select name="upload_method" id="upload_method" onchange="toggleUploadFields()" required>
+                    <option value="link">Video Link (URL)</option>
+                    <option value="file">Upload File from Device</option>
+                </select>
+            </div>
+
+            <div class="form-group" id="link_field">
+                <label>Video URL</label>
+                <input type="url" name="video_url" placeholder="https://www.youtube.com/watch?v=...">
+            </div>
+
+            <div class="form-group" id="file_field" style="display: none;">
+                <label>Select Video File (MP4, etc.)</label>
+                <input type="file" name="video_file" accept="video/*">
+            </div>
+
+            <div class="form-group">
+                <label>Duration (in minutes)</label>
+                <input type="text" name="duration" required placeholder="e.g. 5">
+            </div>
+
+            <button type="submit">Upload Video</button>
+        </form>
+    </div>
+
+    <h2>Existing Videos</h2>
+    {% for v in videos %}
+    <div class="video-item">
+        <div>
+            <strong>{{ v[1] }}</strong> <span style="font-size:12px; color:#38bdf8;">({{ v[2] | capitalize }})</span><br>
+            <small style="color: #94a3b8;">Duration: {{ v[4] }} mins</small>
+        </div>
+        <a href="/admin/videos/delete/{{ v[0] }}" class="delete-btn">Delete</a>
+    </div>
+    {% else %}
+    <p style="color: #94a3b8;">No videos uploaded yet.</p>
+    {% endfor %}
+</div>
+
+</body>
+</html>

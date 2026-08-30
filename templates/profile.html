@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Money Linker - My Profile</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            -webkit-text-size-adjust: 100%;
+        }
+
+        body {
+            background: linear-gradient(rgba(0, 0, 0, 0.65), rgba(0, 0, 0, 0.65)), 
+                        url('https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&q=80&w=1920') no-repeat center center fixed;
+            background-size: cover;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            padding-bottom: 90px;
+            overflow-x: hidden;
+        }
+
+        .dashboard {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 25px 20px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            width: 100%;
+            max-width: 420px;
+            backdrop-filter: blur(10px);
+        }
+
+        h2 {
+            color: #0f172a;
+            margin-bottom: 15px;
+            font-size: 24px;
+            text-align: center;
+        }
+
+        .profile-group {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            padding: 12px 15px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+        }
+
+        .profile-group label {
+            font-size: 12px;
+            font-weight: bold;
+            color: #64748b;
+            display: block;
+            margin-bottom: 3px;
+            text-transform: uppercase;
+        }
+
+        .profile-group span {
+            font-size: 16px;
+            color: #1e293b;
+            font-weight: 600;
+        }
+
+        .badge {
+            background: #059669;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            float: right;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 10px;
+            font-size: 14px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            resize: none;
+            height: 80px;
+            outline: none;
+            margin-top: 5px;
+        }
+
+        textarea:focus {
+            border-color: #059669;
+            box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.15);
+        }
+
+        button {
+            width: 100%;
+            background: #059669;
+            color: white;
+            padding: 10px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: bold;
+            margin-top: 8px;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background: #047857;
+        }
+
+        .flash {
+            background: #d1fae5;
+            color: #065f46;
+            padding: 8px;
+            border-radius: 6px;
+            font-size: 12px;
+            text-align: center;
+            margin-bottom: 12px;
+            border: 1px solid #a7f3d0;
+        }
+
+        /* FIXED BOTTOM NAVIGATION BAR */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: #ffffff;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .nav-item {
+            flex: 1;
+            text-align: center;
+            padding: 14px 5px;
+            color: #64748b;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 600;
+            transition: color 0.2s, background 0.2s;
+        }
+
+        .nav-item:hover, .nav-item.active {
+            color: #059669;
+            background: #f8fafc;
+        }
+    </style>
+</head>
+<body>
+
+<div class="dashboard">
+    <h2>My Profile</h2>
+
+    <div class="profile-group">
+        <label>Email Address</label>
+        <span>{{ user[1] }}</span>
+    </div>
+
+    <div class="profile-group">
+        <label>Phone Number</label>
+        <span>{{ user[2] }}</span>
+    </div>
+
+    <div class="profile-group">
+        <label>Referral Code <span class="badge">{{ ref_count }} Used</span></label>
+        <span style="letter-spacing: 1px; color: #059669; font-weight: bold;">{{ user[4] }}</span>
+    </div>
+
+    <!-- REPORT SYSTEM -->
+    <div class="profile-group" style="background: #fff; margin-bottom: 0;">
+        <label style="color: #0f172a;">Report Issue / Support</label>
+        <form method="POST" action="/profile">
+            <textarea name="report_message" required placeholder="Describe your issue or report..."></textarea>
+            <button type="submit">Send Report</button>
+        </form>
+    </div>
+</div>
+
+
+
+
+<!-- FIXED BOTTOM NAVIGATION BAR -->
+<div class="bottom-nav">
+    <a href="/" class="nav-item">Home</a>
+    <a href="/my-videos" class="nav-item">My videos</a>
+    <a href="/account" class="nav-item">Account</a>
+    <a href="/profile" class="nav-item">My profile</a>
+</div>
+
+
+
+
+
+
+
+
+
+</body>
+</html>

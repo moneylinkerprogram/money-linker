@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Reports</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background: #0f172a; color: #f8fafc; padding-bottom: 50px; }
+        .admin-nav { display: flex; background: #1e293b; border-bottom: 1px solid #334155; overflow-x: auto; }
+        .admin-nav a { flex: 1; padding: 15px 20px; text-align: center; color: #94a3b8; text-decoration: none; font-weight: 600; white-space: nowrap; }
+        .admin-nav a.active, .admin-nav a:hover { color: #fff; background: #059669; }
+        .container { max-width: 900px; margin: 30px auto; padding: 0 15px; }
+        h2 { margin-bottom: 20px; color: #38bdf8; }
+        .card { background: #1e293b; padding: 20px; border-radius: 8px; border: 1px solid #334155; text-align: center; color: #94a3b8; }
+    </style>
+</head>
+<body>
+
+<div class="admin-nav">
+    <a href="/admin/dashboard">Dashboard</a>
+    <a href="/admin/videos">Videos</a>
+    <a href="/admin/users">Users</a>
+    <a href="/admin/requests">Request</a>
+    <a href="/admin/reports" class="active">Reports</a>
+</div>
+
+<div class="container">
+    <h2>Support & Issue Reports</h2>
+    <div class="card">
+        <p>Support reports are currently being forwarded directly to your email (kenmurimi127@gmail.com). No saved records in database yet.</p>
+    </div>
+</div>
+
+</body>
+</html>

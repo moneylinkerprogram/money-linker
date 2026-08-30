@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Money Linker - Withdraw</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { 
+            background: linear-gradient(rgba(15, 23, 42, 0.9), rgba(15, 23, 42, 0.9)),
+                        url('https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&q=80&w=1920') no-repeat center center fixed;
+            background-size: cover;
+            color: #fff; 
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding-bottom: 70px;
+        }
+        .top-bar { 
+            background: rgba(15, 23, 42, 0.95);
+            padding: 15px 20px; 
+            text-align: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .top-bar h1 { font-size: 18px; color: #ffffff; }
+        .top-bar h1 span { color: #059669; }
+        
+        .container { 
+            padding: 20px; 
+            max-width: 500px; 
+            margin: auto; 
+            width: 100%;
+        }
+        .card { 
+            background: rgba(30, 41, 59, 0.95); 
+            padding: 20px; 
+            border-radius: 12px; 
+            box-shadow: 0 8px 20px rgba(0,0,0,0.4); 
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            margin-bottom: 15px;
+        }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-size: 13px; color: #94a3b8; margin-bottom: 5px; }
+        .form-control {
+            width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #334155;
+            background: #0f172a; color: #fff; font-size: 14px;
+        }
+        .btn {
+            background: #059669; color: white; border: none; padding: 14px;
+            border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; font-size: 15px;
+            transition: background 0.2s; text-align: center; display: block; text-decoration: none;
+        }
+        .btn:hover { background: #047857; }
+        .btn-danger { background: #dc2626; }
+        .btn-danger:hover { background: #b91c1c; }
+        
+        .notice-box {
+            background: rgba(5, 150, 105, 0.15); border: 1px solid #059669; padding: 12px;
+            border-radius: 8px; font-size: 13px; color: #34d399; margin-bottom: 15px; text-align: center;
+        }
+        
+        .bottom-nav { 
+            position: fixed; bottom: 0; left: 0; width: 100%; background: #ffffff; 
+            display: flex; justify-content: space-around; align-items: center; 
+            border-top: 1px solid #e2e8f0; height: 60px; z-index: 1000;
+        }
+        .nav-item { flex: 1; text-align: center; padding: 10px 5px; color: #64748b; text-decoration: none; font-size: 14px; font-weight: 600; }
+        .nav-item.active { color: #059669; background: #f8fafc; border-top: 3px solid #059669; }
+    </style>
+</head>
+<body>
+
+<div class="top-bar">
+    <h1><span>Money</span> Linker - Withdraw</h1>
+</div>
+
+<div class="container">
+    <div class="notice-box">
+        ℹ️ Withdrawals are processed strictly on <strong>Tuesdays</strong> and <strong>Fridays</strong>. Minimum amount is <strong>200 Ksh</strong>.
+    </div>
+
+    {% if pending_request %}
+    <div class="card" style="border-color: #f59e0b;">
+        <h3 style="color: #f59e0b; margin-bottom: 10px; font-size: 15px;">Pending Withdrawal Request</h3>
+        <p style="font-size: 13px; color: #cbd5e1; margin-bottom: 6px;"><strong>Amount:</strong> {{ pending_request[1] }} Ksh</p>
+        <p style="font-size: 13px; color: #cbd5e1; margin-bottom: 6px;"><strong>Phone:</strong> {{ pending_request[2] }}</p>
+        <p style="font-size: 13px; color: #cbd5e1; margin-bottom: 12px;" id="countdown-text">Calculating closest payout day...</p>
+        
+        <form action="/cancel-withdrawal" method="POST">
+            <input type="hidden" name="req_id" value="{{ pending_request[0] }}">
+            <button type="submit" class="btn btn-danger">Cancel Request</button>
+        </form>
+    </div>
+    <script>
+        // Calculate closest Tuesday (2) or Friday (5)
+        function updateCountdown() {
+            const now = new Date();
+            const dayOfWeek = now.getDay(); // 0 = Sun, 1 = Mon, 2 = Tue, 3 = Wed, 4 = Thu, 5 = Fri, 6 = Sat
+            
+            // Days until next Tuesday (2) or Friday (5)
+            let daysToTue = (2 - dayOfWeek + 7) % 7;
+            if (daysToTue === 0 && now.getHours() >= 18) daysToTue = 7; // if past Tuesday evening
+            
+            let daysToFri = (5 - dayOfWeek + 7) % 7;
+            if (daysToFri === 0 && now.getHours() >= 18) daysToFri = 7; // if past Friday evening
+
+            let targetDays = Math.min(daysToTue === 0 ? 7 : daysToTue, daysToFri === 0 ? 7 : daysToFri);
+            if(daysToTue > 0 && daysToTue < daysToFri) targetDays = daysToTue;
+            else if(daysToFri > 0 && daysToFri <= daysToTue) targetDays = daysToFri;
+
+            document.getElementById('countdown-text').innerHTML = `<strong>Next Payout In:</strong> ~${targetDays} day(s) (Closest Tue/Fri)`;
+        }
+        updateCountdown();
+    </script>
+    {% else %}
+    <div class="card">
+        {% if error_msg %}
+            <div style="background: #7f1d1d; color: #fca5a5; padding: 10px; border-radius: 6px; margin-bottom: 12px; font-size: 13px;">
+                {{ error_msg }}
+            </div>
+        {% endif %}
+
+        <form action="/withdraw" method="POST">
+            <div class="form-group">
+                <label>Withdrawal Amount (Min: 200 Ksh):</label>
+                <input type="number" name="amount" min="200" required class="form-control" placeholder="Enter amount (e.g. 200)">
+            </div>
+            
+            <div class="form-group">
+                <label>M-Pesa Phone Number:</label>
+                <input type="text" name="phone" required class="form-control" placeholder="e.g. 0712345678">
+            </div>
+
+            <button type="submit" class="btn">Request Withdrawal</button>
+        </form>
+    </div>
+    {% endif %}
+</div>
+
+<div class="bottom-nav">
+    <a href="/" class="nav-item">Home</a>
+    <a href="/my-videos" class="nav-item">My videos</a>
+    <a href="/account" class="nav-item">Account</a>
+    <a href="/profile" class="nav-item">My profile</a>
+</div>
+
+</body>
+</html>

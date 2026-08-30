@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <!-- Viewport locked to prevent zooming in/out -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Money Linker - Portal</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            -webkit-text-size-adjust: 100%; /* Prevents font scaling on mobile rotation */
+        }
+
+        body {
+            background: linear-gradient(rgba(0, 0, 0, 0.65), rgba(0, 0, 0, 0.65)), 
+                        url('https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&q=80&w=1920') no-repeat center center fixed;
+            background-size: cover;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 30px 25px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            width: 100%;
+            max-width: 400px;
+            backdrop-filter: blur(10px);
+        }
+
+        h2 {
+            text-align: center;
+            color: #0f172a;
+            margin-bottom: 20px;
+            font-size: 26px;
+            letter-spacing: 0.5px;
+        }
+
+        h2 span {
+            color: #059669; /* Money green highlight */
+        }
+
+        label {
+            display: block;
+            margin-top: 12px;
+            margin-bottom: 5px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #334155;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            font-size: 16px; 
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        input:focus {
+            border-color: #059669;
+            box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.15);
+        }
+
+        button {
+            width: 100%;
+            background: #059669;
+            color: white;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            margin-top: 20px;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background: #047857;
+        }
+
+        .flash {
+            background: #fee2e2;
+            color: #991b1b;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 13px;
+            text-align: center;
+            margin-bottom: 15px;
+            border: 1px solid #fecaca;
+        }
+
+        .flash.success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+        }
+
+        .toggle-link, .forgot-link {
+            text-align: center;
+            margin-top: 15px;
+            font-size: 14px;
+            cursor: pointer;
+            color: #0284c7;
+            font-weight: 500;
+        }
+
+        .toggle-link:hover, .forgot-link:hover {
+            text-decoration: underline;
+        }
+
+        .form-section { display: none; }
+        .form-section.active { display: block; }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            font-size: 14px;
+            margin-top: 12px;
+            color: #475569;
+        }
+
+        .checkbox-group input {
+            width: auto;
+            margin-right: 8px;
+            accent-color: #059669;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2><span>Money</span> Linker</h2>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="flash {{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <!-- SIGN IN FORM -->
+    <form id="signin-form" class="form-section {% if not show_reset_box %}active{% endif %}" method="POST" action="/login">
+        <input type="hidden" name="action" value="signin">
+        <label>Email or Phone Number</label>
+        <input type="text" name="identifier" required placeholder="Enter email or phone">
+        
+        <label>Password</label>
+        <input type="password" name="password" required placeholder="Enter password">
+        
+        <div class="checkbox-group">
+            <input type="checkbox" id="remember" name="remember">
+            <label for="remember" style="margin:0;">Remember Me</label>
+        </div>
+
+        <button type="submit">Sign In</button>
+        
+        <div class="forgot-link" onclick="toggleForgot()">Forgot Password?</div>
+        <div class="toggle-link" onclick="toggleForms()">Don't have an account? <strong>Sign Up</strong></div>
+    </form>
+
+    <!-- SIGN UP FORM -->
+    <form id="signup-form" class="form-section" method="POST" action="/login">
+        <input type="hidden" name="action" value="signup">
+        <label>Email Address</label>
+        <input type="email" name="email" required placeholder="name@example.com">
+        
+        <label>Phone Number</label>
+        <input type="text" name="phone" required placeholder="Phone number">
+        
+        <label>Strong Password</label>
+        <input type="password" name="password" required placeholder="Create secure password">
+        
+        <label>Referral Code</label>
+        <input type="text" name="referral_code" required placeholder="Enter valid referral code">
+
+        <button type="submit">Create Account</button>
+        <div class="toggle-link" onclick="toggleForms()">Already have an account? <strong>Sign In</strong></div>
+    </form>
+
+    <!-- FORGOT PASSWORD FORM -->
+    <form id="forgot-form" class="form-section" action="/forgot" method="POST">
+        <label>Enter Registered Email</label>
+        <input type="email" name="reset_email" required placeholder="your@email.com">
+        <button type="submit">Send Reset Code</button>
+        <div class="toggle-link" onclick="toggleForgot()">Back to Sign In</div>
+    </form>
+
+    <!-- ACTUAL RESET CODE SUBMISSION BOX -->
+    {% if show_reset_box %}
+    <form id="reset-box-form" class="form-section active" action="/reset-password" method="POST">
+        <label style="color:#059669; font-weight:bold;">Enter Code Sent to Email</label>
+        <input type="text" name="reset_code" required placeholder="4-digit code">
+        
+        <label>New Password</label>
+        <input type="password" name="new_password" required placeholder="Enter new password">
+        
+        <button type="submit">Update Password</button>
+    </form>
+    {% endif %}
+</div>
+
+<script>
+    function toggleForms() {
+        document.getElementById('signin-form').classList.toggle('active');
+        document.getElementById('signup-form').classList.toggle('active');
+        document.getElementById('forgot-form').classList.remove('active');
+    }
+    function toggleForgot() {
+        document.getElementById('signin-form').classList.toggle('active');
+        document.getElementById('forgot-form').classList.toggle('active');
+    }
+</script>
+
+</body>
+</html>

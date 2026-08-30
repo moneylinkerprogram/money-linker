@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Money Linker - Account</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            -webkit-text-size-adjust: 100%;
+        }
+        body { 
+            background: linear-gradient(rgba(15, 23, 42, 0.9), rgba(15, 23, 42, 0.9)),
+                        url('https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&q=80&w=1920') no-repeat center center fixed;
+            background-size: cover;
+            color: #fff; 
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding-bottom: 70px; /* Leaves space so content isn't covered by the fixed nav bar */
+        }
+        .top-bar { 
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 15px 20px; 
+            text-align: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .top-bar h1 {
+            font-size: 20px;
+            color: #ffffff;
+            font-weight: bold;
+        }
+        .top-bar h1 span {
+            color: #059669;
+        }
+        .container { 
+            padding: 24px 20px; 
+            max-width: 500px; 
+            width: 100%;
+            margin: auto; 
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            flex-grow: 1;
+            justify-content: center;
+        }
+        .account-card { 
+            background: rgba(30, 41, 59, 0.95); 
+            padding: 22px; 
+            border-radius: 14px; 
+            width: 100%;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.4); 
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .account-card h3 {
+            margin-top: 0;
+            color: #94a3b8;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+        }
+        .balance-amount {
+            font-size: 32px;
+            font-weight: bold;
+            color: #059669;
+            margin-top: 8px;
+        }
+        .action-btn { 
+            background: #059669; 
+            color: white; 
+            border: none; 
+            padding: 16px 20px; 
+            border-radius: 12px; 
+            cursor: pointer; 
+            font-weight: bold; 
+            width: 100%; 
+            font-size: 16px;
+            text-align: center;
+            text-decoration: none;
+            box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
+            display: block;
+            transition: background 0.2s;
+        }
+        .action-btn:hover {
+            background: #047857;
+        }
+        
+        /* MATCHED UNIFORM BOTTOM NAVIGATION BAR */
+        .bottom-nav { 
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%; 
+            background: #ffffff; 
+            display: flex; 
+            justify-content: space-around; 
+            align-items: center;
+            box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.3);
+            border-top: 1px solid #e2e8f0; 
+            height: 60px;
+            z-index: 1000;
+        }
+        .nav-item { 
+            flex: 1;
+            text-align: center;
+            padding: 10px 5px;
+            color: #64748b; 
+            text-decoration: none; 
+            font-size: 14px; /* Uniform size matched */
+            font-weight: 600; 
+        }
+        .nav-item.active { 
+            color: #059669; 
+            background: #f8fafc;
+            border-top: 3px solid #059669;
+        }
+    </style>
+</head>
+<body>
+
+<div class="top-bar">
+    <h1><span>Money</span> Linker</h1>
+</div>
+
+<div class="container">
+    <div class="account-card">
+        <h3>My Balance</h3>
+        <div class="balance-amount">{{ balance }} Ksh</div>
+    </div>
+
+    <a href="/deposit" class="action-btn">
+        Deposit Funds
+    </a>
+
+    <a href="/withdraw" class="action-btn">
+        Withdraw Earnings
+    </a>
+
+    <a href="/invest" class="action-btn">
+        Invest & Grow
+    </a>
+</div>
+
+<div class="bottom-nav">
+    <a href="/" class="nav-item">Home</a>
+    <a href="/my-videos" class="nav-item">My videos</a>
+    <a href="/account" class="nav-item active">Account</a>
+    <a href="/profile" class="nav-item">My profile</a>
+</div>
+
+</body>
+</html>

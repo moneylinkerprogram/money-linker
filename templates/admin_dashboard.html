@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background: #0f172a; color: #f8fafc; padding-bottom: 50px; }
+        .admin-nav { display: flex; background: #1e293b; border-bottom: 1px solid #334155; overflow-x: auto; }
+        .admin-nav a { flex: 1; padding: 15px 20px; text-align: center; color: #94a3b8; text-decoration: none; font-weight: 600; white-space: nowrap; }
+        .admin-nav a.active, .admin-nav a:hover { color: #fff; background: #059669; }
+        .container { max-width: 800px; margin: 30px auto; padding: 0 15px; }
+        h2 { margin-bottom: 20px; color: #38bdf8; }
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px; }
+        .stat-card { background: #1e293b; padding: 20px; border-radius: 8px; border: 1px solid #334155; text-align: center; }
+        .stat-card h3 { font-size: 28px; color: #34d399; margin-top: 5px; }
+        .logout-btn { display: inline-block; background: #ef4444; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: bold; margin-top: 20px; }
+    </style>
+</head>
+<body>
+
+<div class="admin-nav">
+    <a href="/admin/dashboard" class="active">Dashboard</a>
+    <a href="/admin/videos">Videos</a>
+    <a href="/admin/users">Users</a>
+    <a href="/admin/requests">Request</a>
+    <a href="/admin/reports">Reports</a>
+</div>
+
+<div class="container">
+    <h2>Overview Dashboard</h2>
+    
+    <div class="stats-grid">
+
+
+
+
+
+<div class="stat-card">
+    <p>Total Registered Users</p>
+    <!-- This will dynamically show the user count from the database -->
+    <h3>{{ total_users }}</h3>
+</div>
+
+
+
+
+
+        <div class="stat-card">
+            <p>Total Uploaded Videos</p>
+            <h3>{{ total_videos }}</h3>
+        </div>
+    </div>
+
+    <a href="/admin/logout" class="logout-btn">Log Out Admin</a>
+</div>
+
+</body>
+</html>

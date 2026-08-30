@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Money Linker - Deposit</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { 
+            background: linear-gradient(rgba(15, 23, 42, 0.85), rgba(15, 23, 42, 0.85)),
+                        url('https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&q=80&w=1920') no-repeat center center fixed;
+            background-size: cover;
+            color: #fff; 
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .top-bar { 
+            background: rgba(15, 23, 42, 0.95);
+            padding: 10px 15px; 
+            text-align: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            flex-shrink: 0;
+        }
+        .top-bar h1 { font-size: 16px; color: #ffffff; }
+        .top-bar h1 span { color: #059669; }
+        
+        .container { 
+            padding: 10px 15px; 
+            max-width: 600px; 
+            margin: auto; 
+            width: 100%;
+        }
+        .card { 
+            background: rgba(30, 41, 59, 0.95); 
+            padding: 15px 20px; 
+            border-radius: 12px; 
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3); 
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        
+        /* Modal Overlay for Terms */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.85); display: flex; justify-content: center; align-items: center; z-index: 2000;
+            padding: 20px;
+        }
+        .modal-box {
+            background: #1e293b; padding: 20px; border-radius: 12px; max-width: 500px; width: 100%;
+            border: 1px solid #334155; text-align: left; box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        }
+        .modal-box h2 { color: #059669; margin-bottom: 10px; font-size: 16px; }
+        .modal-box p { font-size: 13px; line-height: 1.5; color: #cbd5e1; margin-bottom: 15px; }
+        
+        .form-group { margin-bottom: 12px; }
+        .form-group label { display: block; font-size: 12px; color: #94a3b8; margin-bottom: 4px; }
+        .form-control {
+            width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #334155;
+            background: #0f172a; color: #fff; font-size: 14px;
+        }
+        
+        .btn {
+            background: #059669; color: white; border: none; padding: 11px 15px;
+            border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; font-size: 14px;
+            transition: background 0.2s;
+        }
+        .btn:hover { background: #047857; }
+        
+        .moderator-box {
+            background: #0f172a; padding: 10px 12px; border-radius: 8px; border: 1px solid #059669;
+            margin-bottom: 12px; font-size: 13px;
+        }
+        
+        .bottom-nav { 
+            width: 100%; background: #ffffff; display: flex; justify-content: space-around; 
+            align-items: center; border-top: 1px solid #e2e8f0; height: 50px; flex-shrink: 0;
+        }
+        .nav-item { flex: 1; text-align: center; padding: 8px 5px; color: #64748b; text-decoration: none; font-size: 12px; font-weight: 600; }
+        .nav-item.active { color: #059669; background: #f8fafc; border-top: 2px solid #059669; }
+    </style>
+</head>
+<body>
+
+<!-- TERMS & CONDITIONS MODAL -->
+<div id="termsModal" class="modal-overlay">
+    <div class="modal-box">
+        <h2>Terms & Conditions</h2>
+        <p>Dear Member, this platform operates as a third-party service utilized by individuals and businesses to purchase views, likes, and engagement across various social media networks such as TikTok, Facebook, and others. By accepting these terms and conditions, you officially join the Money Linkers community.</p>
+        <button onclick="acceptTerms()" class="btn">OK, Accept & Continue</button>
+    </div>
+</div>
+
+<div class="top-bar">
+    <h1><span>Money</span> Linker - Deposit</h1>
+</div>
+
+<div class="container">
+    <div class="card">
+        {% if success_msg %}
+            <div style="background: #065f46; color: #d1fae5; padding: 10px; border-radius: 8px; margin-bottom: 12px; font-size: 13px;">
+                {{ success_msg }}
+            </div>
+        {% endif %}
+
+        <div class="moderator-box">
+            <p><strong>Send M-Pesa to Moderator:</strong></p>
+            <p style="font-size: 16px; color: #38bdf8; margin: 6px 0; font-weight: bold;">
+                0748226785
+            </p>
+            <p style="font-size: 11px; color: #94a3b8; margin-top: 4px;">
+                <em>Welcome to earning member! Feel free to ask anything through the report system.</em>
+            </p>
+        </div>
+
+        <form action="/deposit" method="POST">
+            <div class="form-group">
+                <label>Deposit Amount (Min: 50 Ksh):</label>
+                <input type="number" name="amount" min="50" required class="form-control" placeholder="Enter amount (e.g. 50)">
+            </div>
+            
+            <div class="form-group">
+                <label>M-Pesa Confirmation Code:</label>
+                <input type="text" name="mpesa_code" required class="form-control" placeholder="Enter M-Pesa code (e.g. QHX789...)">
+            </div>
+
+            <button type="submit" class="btn">Submit Deposit & Confirm</button>
+        </form>
+    </div>
+</div>
+
+<div class="bottom-nav">
+    <a href="/" class="nav-item">Home</a>
+    <a href="/my-videos" class="nav-item">My videos</a>
+    <a href="/account" class="nav-item active">Account</a>
+    <a href="/profile" class="nav-item">My profile</a>
+</div>
+
+<script>
+function acceptTerms() {
+    document.getElementById('termsModal').style.display = 'none';
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Admin - Requests</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background: #0f172a; color: #fff; min-height: 100vh; padding: 20px; }
+        .container { max-width: 600px; margin: auto; }
+        h1 { font-size: 22px; color: #38bdf8; margin-bottom: 20px; text-align: center; }
+        h2 { font-size: 18px; color: #34d399; margin: 25px 0 15px 0; border-bottom: 1px solid #334155; padding-bottom: 5px; }
+        .card { 
+            background: rgba(30, 41, 59, 0.95); 
+            padding: 15px; 
+            border-radius: 12px; 
+            margin-bottom: 15px; 
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+        .form-control {
+            background: #0f172a; border: 1px solid #334155; color: #fff; padding: 8px 10px; border-radius: 6px; font-size: 14px; width: 100%;
+        }
+        .nav-back { display: block; text-align: center; margin-bottom: 20px; color: #38bdf8; text-decoration: none; font-size: 14px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <a href="/admin/dashboard" class="nav-back">← Back to Dashboard</a>
+    <h1>Admin Requests Panel</h1>
+
+    <!-- DEPOSIT REQUESTS SECTION -->
+    <h2>User Deposit Requests</h2>
+    {% if not requests_list %}
+        <p style="color: #94a3b8; font-size: 13px; margin-bottom: 20px;">No deposit requests found.</p>
+    {% endif %}
+    
+    {% for req in requests_list %}
+    <div class="card">
+        <p style="font-size: 13px; color: #94a3b8; margin-bottom: 4px;"><strong>User Email:</strong> {{ req[1] }}</p>
+        <p style="font-size: 13px; color: #94a3b8; margin-bottom: 4px;"><strong>Phone:</strong> {{ req[2] }}</p>
+        <p style="font-size: 13px; color: #94a3b8; margin-bottom: 4px;"><strong>M-Pesa Code:</strong> <span style="color: #38bdf8;">{{ req[4] }}</span></p>
+        <p style="font-size: 13px; color: #94a3b8; margin-bottom: 8px;"><strong>Status:</strong> 
+            <span style="color: {% if req[5] == 'Approved' %}#34d399{% else %}#fbbf24{% endif %};">{{ req[5] }}</span>
+        </p>
+
+        <form method="POST" style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px;">
+            <input type="hidden" name="request_id" value="{{ req[0] }}">
+            <input type="hidden" name="req_type" value="deposit">
+            
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <label style="font-size: 12px; color: #cbd5e1; min-width: 90px;">Verify Amount:</label>
+                <input type="number" name="verified_amount" value="{{ req[3] }}" required class="form-control">
+            </div>
+
+            <div style="display: flex; gap: 8px; margin-top: 5px;">
+                {% if req[5] != 'Approved' %}
+                <button type="submit" name="action" value="approve" 
+                        style="background: #059669; color: white; border: none; padding: 8px 12px; border-radius: 6px; font-weight: bold; font-size: 13px; cursor: pointer; flex: 2;">
+                    Approve & Credit
+                </button>
+                {% endif %}
+
+                <button type="submit" name="action" value="delete" 
+                        style="background: #dc2626; color: white; border: none; padding: 8px 12px; border-radius: 6px; font-weight: bold; font-size: 13px; cursor: pointer; flex: 1;"
+                        onclick="return confirm('Delete this deposit request?');">
+                    Delete
+                </button>
+            </div>
+        </form>
+    </div>
+    {% endfor %}
+
+
+    <!-- WITHDRAWAL REQUESTS SECTION -->
+    <h2>User Withdrawal Requests</h2>
+    {% if not withdrawals_list %}
+        <p style="color: #94a3b8; font-size: 13px; margin-bottom: 20px;">No withdrawal requests found.</p>
+    {% endif %}
+
+    {% for w in withdrawals_list %}
+    <div class="card" style="border-color: #f59e0b;">
+        <p style="font-size: 13px; color: #94a3b8; margin-bottom: 4px;"><strong>User Email:</strong> {{ w[1] }}</p>
+        <p style="font-size: 13px; color: #94a3b8; margin-bottom: 4px;"><strong>Payout Phone:</strong> <span style="color: #38bdf8;">{{ w[4] }}</span></p>
+        <p style="font-size: 13px; color: #94a3b8; margin-bottom: 8px;"><strong>Status:</strong> 
+            <span style="color: {% if w[5] == 'Approved' %}#34d399{% else %}#fbbf24{% endif %};">{{ w[5] }}</span>
+        </p>
+
+        <form method="POST" style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px;">
+            <input type="hidden" name="request_id" value="{{ w[0] }}">
+            <input type="hidden" name="req_type" value="withdrawal">
+            
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <label style="font-size: 12px; color: #cbd5e1; min-width: 90px;">Verify Amount:</label>
+                <input type="number" name="verified_amount" value="{{ w[3] }}" required class="form-control">
+            </div>
+
+            <div style="display: flex; gap: 8px; margin-top: 5px;">
+                {% if w[5] != 'Approved' %}
+                <button type="submit" name="action" value="approve" 
+                        style="background: #059669; color: white; border: none; padding: 8px 12px; border-radius: 6px; font-weight: bold; font-size: 13px; cursor: pointer; flex: 2;"
+                        onclick="return confirm('Confirming will deduct this amount from the user account. Proceed?');">
+                    Confirm & Deduct
+                </button>
+                {% endif %}
+
+                <button type="submit" name="action" value="delete" 
+                        style="background: #dc2626; color: white; border: none; padding: 8px 12px; border-radius: 6px; font-weight: bold; font-size: 13px; cursor: pointer; flex: 1;"
+                        onclick="return confirm('Delete this withdrawal request?');">
+                    Delete
+                </button>
+            </div>
+        </form>
+    </div>
+    {% endfor %}
+</div>
+
+</body>
+</html>

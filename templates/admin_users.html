@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Users List</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background: #0f172a; color: #f8fafc; padding-bottom: 50px; }
+        .admin-nav { display: flex; background: #1e293b; border-bottom: 1px solid #334155; overflow-x: auto; }
+        .admin-nav a { flex: 1; padding: 15px 20px; text-align: center; color: #94a3b8; text-decoration: none; font-weight: 600; white-space: nowrap; }
+        .admin-nav a.active, .admin-nav a:hover { color: #fff; background: #059669; }
+        .container { max-width: 900px; margin: 30px auto; padding: 0 15px; }
+        h2 { margin-bottom: 20px; color: #38bdf8; }
+        table { width: 100%; border-collapse: collapse; background: #1e293b; border-radius: 8px; overflow: hidden; border: 1px solid #334155; }
+        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #334155; font-size: 14px; }
+        th { background: #0f172a; color: #38bdf8; }
+        tr:hover { background: rgba(56, 189, 248, 0.05); }
+    </style>
+</head>
+<body>
+
+<div class="admin-nav">
+    <a href="/admin/dashboard">Dashboard</a>
+    <a href="/admin/videos">Videos</a>
+    <a href="/admin/users" class="active">Users</a>
+    <a href="/admin/requests">Request</a>
+    <a href="/admin/reports">Reports</a>
+</div>
+
+<div class="container">
+    <h2>Registered Users Database</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Referral Code</th>
+                <th>Referred By</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in users %}
+            <tr>
+                <td>{{ user[0] }}</td>
+                <td>{{ user[1] }}</td>
+                <td>{{ user[2] }}</td>
+                <td style="color: #34d399; font-weight: bold;">{{ user[4] }}</td>
+                <td>{{ user[5] }}</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="5" style="text-align: center; color: #94a3b8;">No registered users found.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+</body>
+</html>

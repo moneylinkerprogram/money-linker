@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Portal Login</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
+        body { background: #0f172a; color: #f8fafc; display: flex; justify-content: center; align-items: center; height: 100vh; }
+        .box { background: #1e293b; padding: 30px; border-radius: 8px; width: 100%; max-width: 380px; border: 1px solid #334155; }
+        h2 { color: #38bdf8; margin-bottom: 20px; text-align: center; }
+        label { display: block; font-size: 13px; color: #94a3b8; margin-bottom: 5px; }
+        input { width: 100%; padding: 10px; margin-bottom: 15px; background: #0f172a; border: 1px solid #475569; color: white; border-radius: 4px; }
+        button { width: 100%; padding: 10px; background: #059669; color: white; border: none; font-weight: bold; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #047857; }
+        .error { background: #ef4444; color: white; padding: 8px; border-radius: 4px; margin-bottom: 15px; font-size: 13px; text-align: center; }
+    </style>
+</head>
+<body>
+<div class="box">
+    <h2>Admin Access Only</h2>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for cat, msg in messages %}
+          <div class="error">{{ msg }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+    <form method="POST">
+        <label>Email</label>
+        <input type="email" name="email" required placeholder="kenmurimi127@gmail.com">
+        <label>Password</label>
+        <input type="password" name="password" required placeholder="Kenny123">
+        <button type="submit">Log In to Database Panel</button>
+    </form>
+</div>
+</body>
+</html>
