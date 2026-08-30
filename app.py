@@ -266,8 +266,8 @@ def profile():
 
 
 # Separate Admin Credentials
-ADMIN_EMAIL = "kenmurimi127@gmail.com"
-ADMIN_PASSWORD = "Kenny123"
+ADMIN_EMAIL = "kenmurimi101@gmail.com"
+ADMIN_PASSWORD = "Km286720.!2840"
 
 
 @app.route("/admin/login", methods=["GET", "POST"])
