@@ -1097,42 +1097,46 @@ def complete_video(video_id):
 
 
           #FORGET PASSWORD
-
 @app.route("/forgot", methods=["GET", "POST"])
 def forgot_password():
   if request.method == "GET":
     return redirect(url_for("login"))
 
-  email = request.form.get("reset_email")
-  conn = sqlite3.connect("database.db")
-  cursor = conn.cursor()
-  cursor.execute("SELECT * FROM users WHERE email = ?", (email,))
-  user = cursor.fetchone()
-  conn.close()
+  try:
+    email = request.form.get("reset_email")
+    conn = sqlite3.connect("database.db")
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM users WHERE email = ?", (email,))
+    user = cursor.fetchone()
+    conn.close()
 
-  if user:
-    # Generate 4-digit code
-    reset_code = "".join(random.choices(string.digits, k=4))
-    session["reset_email"] = email
-    session["reset_code"] = reset_code
+    if user:
+      reset_code = "".join(random.choices(string.digits, k=4))
+      session["reset_email"] = email
+      session["reset_code"] = reset_code
 
-    # Send real email to user's Gmail
-    email_sent = send_email_to_user(email, reset_code)
+      # Attempt to send email, but safely catch any network blocks
+      try:
+        email_sent = send_email_to_user(email, reset_code)
+      except Exception:
+        email_sent = False
 
-    if email_sent:
-      flash(
-          f"Reset code successfully sent to {email}. Check your inbox!",
-          "success",
-      )
+      if email_sent:
+        flash(f"Reset code successfully sent to {email}.", "success")
+      else:
+        flash(f"Debug Reset Code (SMTP Restricted): {reset_code}", "warning")
+        
+      return render_template("login.html", show_reset_box=True)
     else:
-      # Fallback so you can still test it even if Render blocks outbound SMTP ports!
-      flash(f"Debug Reset Code (SMTP Blocked): {reset_code}", "warning")
-      
-    return render_template("login.html", show_reset_box=True)
-  else:
-    flash("Email not found in database.", "danger")
+      flash("Email not found in database.", "danger")
+  except Exception as e:
+    print(f"Forgot password error: {e}")
+    flash("An error occurred processing your request.", "danger")
 
   return redirect(url_for("login"))
+
+
+
 
 
 
