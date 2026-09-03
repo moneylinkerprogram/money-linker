@@ -76,47 +76,29 @@ SMTP_PORT = 587
 SENDER_EMAIL = "kenmurimi127@gmail.com"
 SENDER_PASSWORD = "xlsoarccekvebmph"
 
-def send_email_to_user(recipient_email, reset_code):
-    # (Your email function code continues here...)
 
 
 
-
-
-
-
-
-
-
-
-
-
+def send_email_to_user(to_email, reset_code):
   try:
-    print(f"DEBUG: Sending reset code {reset_code} to {recipient_email}")
-
     msg = MIMEMultipart()
     msg["From"] = SENDER_EMAIL
-    msg["To"] = recipient_email
-    msg["Subject"] = "Money Linker - Password Reset Code"
+    msg["To"] = to_email
+    msg["Subject"] = "Money Linker Password Reset Code"
 
-    body = (
-        f"Hello,\n\nYour password reset code is: {reset_code}\n\nIf you did"
-        " not request this, please ignore this email.\n\nBest regards,\nMoney"
-        " Linker Team"
-    )
+    body = f"Your password reset code is: {reset_code}"
     msg.attach(MIMEText(body, "plain"))
 
-    server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
+    # Add timeout=3 so Render doesn't hang and timeout the worker!
+    server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=3)
     server.starttls()
     server.login(SENDER_EMAIL, SENDER_PASSWORD)
-    server.sendmail(SENDER_EMAIL, recipient_email, msg.as_string())
+    server.sendmail(SENDER_EMAIL, to_email, msg.as_string())
     server.quit()
-    print("DEBUG: Email sent successfully!")
     return True
   except Exception as e:
-    print(f"Error sending email: {e}")
+    print(f"SMTP Blocked/Failed on Render: {e}")
     return False
-
 
 
 
