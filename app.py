@@ -76,7 +76,6 @@ SMTP_PORT = 587
 SENDER_EMAIL = "kenmurimi127@gmail.com"
 SENDER_PASSWORD = "xlsoarccekvebmph"
 
-
 import os
 import requests
 
@@ -94,18 +93,11 @@ def send_email_to_user(to_email, reset_code):
       },
       "to": [{"email": to_email}],
       "subject": "Money Linker Password Reset Code",
-      "textContent": f"Hello,\n\nYour password reset code is: {reset_code}\n\nEnter this code on the website to reset your password.",
+      "textContent": (
+          f"Hello,\n\nYour password reset code is: {reset_code}\n\nEnter this"
+          " code on the website to reset your password."
+      ),
   }
-...
-
-
-
-
-
-
-
-
-
 
   headers = {
       "accept": "application/json",
@@ -123,8 +115,6 @@ def send_email_to_user(to_email, reset_code):
   except Exception as e:
     print(f"HTTP Email API error: {e}")
     return False
-
-
 
 
 
