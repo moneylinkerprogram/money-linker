@@ -262,6 +262,41 @@ def admin_login():
   return render_template("admin_login.html")
 
 
+@app.route("/admin/debug-referrals")
+def debug_referrals():
+    if not session.get("admin_logged"):
+        return redirect(url_for("admin_login"))
+
+    conn = sqlite3.connect("database.db")
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, email, referral_code, referred_by, balance FROM users")
+    all_users = cursor.fetchall()
+    
+    cursor.execute("SELECT id, user_id, amount, status FROM deposit_requests")
+    all_deposits = cursor.fetchall()
+    conn.close()
+
+    output = "<h2>Users Table:</h2><table border='1'><tr><th>ID</th><th>Email</th><th>Referral Code</th><th>Referred By</th><th>Balance</th></tr>"
+    for u in all_users:
+        output += f"<tr><td>{u[0]}</td><td>{u[1]}</td><td>{u[2]}</td><td>{u[3]}</td><td>{u[4]}</td></tr>"
+    output += "</table>"
+
+    output += "<h2>Deposit Requests Table:</h2><table border='1'><tr><th>ID</th><th>User ID</th><th>Amount</th><th>Status</th></tr>"
+    for d in all_deposits:
+        output += f"<tr><td>{d[0]}</td><td>{d[1]}</td><td>{d[2]}</td><td>{d[3]}</td></tr>"
+    output += "</table>"
+
+    return output
+
+
+
+
+
+
+
+
+
+
 @app.route("/admin/dashboard")
 def admin_dashboard():
   if not session.get("admin_logged"):
