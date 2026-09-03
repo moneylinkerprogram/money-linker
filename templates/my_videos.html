@@ -79,7 +79,6 @@
         </div>
     {% endif %}
 </div>
-
 <!-- FIXED BOTTOM NAVIGATION BAR -->
 <div class="bottom-nav">
     <a href="/" class="nav-item">Home</a>
@@ -87,7 +86,6 @@
     <a href="/account" class="nav-item">Account</a>
     <a href="/profile" class="nav-item">My profile</a>
 </div>
-
 
 <!-- Custom Deposit Modal Popup -->
 <div id="depositModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15, 23, 42, 0.8); z-index:1000; align-items:center; justify-content:center;">
@@ -121,7 +119,6 @@ function preventSkipping(video, videoId) {
         maxTimes[videoId] = 0;
     }
     
-    // If user tries to fast-forward past the furthest point they've watched
     if (video.currentTime > maxTimes[videoId] + 1.5) {
         video.currentTime = maxTimes[videoId];
     } else if (video.currentTime > maxTimes[videoId]) {
@@ -158,13 +155,11 @@ function claimReward(videoId) {
             btn.className = "btn-watched";
             btn.disabled = true;
             
-            // Update displayed balance dynamically
             const balanceEl = document.getElementById("user-balance");
             if (balanceEl) {
                 balanceEl.innerText = data.new_balance.toFixed(2);
             }
 
-            // Update status badge container
             const statusContainer = document.getElementById("status-container-" + videoId);
             if (statusContainer) {
                 statusContainer.innerHTML = `
@@ -191,78 +186,6 @@ function closeDepositModal() {
     const modal = document.getElementById("depositModal");
     if (modal) modal.style.display = "none";
 }
-</script>
-
-
-
-
-
-
-
-
-
-
-document.addEventListener("DOMContentLoaded", function() {
-    // Select all video elements on the page
-    const videos = document.querySelectorAll("video");
-
-    videos.foreach(video => {
-        // Find the parent card and its corresponding reward button
-        const card = video.closest(".card") || video.parentElement;
-        const rewardBtn = card.querySelector(".reward-btn");
-
-        if (!rewardBtn) return;
-
-        // Check if already watched from backend status
-        if (rewardBtn.dataset.watched === "true") {
-            rewardBtn.innerText = "Reward Claimed ✓";
-            rewardBtn.disabled = true;
-            rewardBtn.classList.add("btn-secondary");
-            return;
-        }
-
-        // Listen for when the video ends
-        video.addEventListener("ended", function() {
-            rewardBtn.innerText = "Claim 5 Ksh 🎁";
-            rewardBtn.disabled = false;
-            rewardBtn.classList.remove("btn-dark", "btn-secondary");
-            rewardBtn.classList.add("btn-success"); // Make it pop out as a claim button
-        });
-
-        // Handle button click to claim reward
-        rewardBtn.addEventListener("click", function() {
-            const videoId = rewardBtn.dataset.videoId;
-            
-            fetch(`/complete-video/${videoId}`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    rewardBtn.innerText = "Reward Claimed ✓";
-                    rewardBtn.disabled = true;
-                    rewardBtn.classList.remove("btn-success");
-                    rewardBtn.classList.add("btn-secondary");
-                    
-                    // Optional: Update displayed balance dynamically if element exists
-                    const balanceEl = document.getElementById("user-balance");
-                    if (balanceEl) {
-                        balanceEl.innerText = data.new_balance.toFixed(2);
-                    }
-                    alert(data.message);
-                } else {
-                    alert(data.message);
-                }
-            })
-            .catch(err => {
-                console.error("Error claiming reward:", err);
-            });
-        });
-    });
-});
 </script>
 
 
