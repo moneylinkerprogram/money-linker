@@ -5,7 +5,9 @@ import random
 import smtplib
 import string
 import sqlite3
+import datetime
 from flask import Flask, flash, redirect, render_template, request, session, url_for, jsonify, send_from_directory
+import requests
 
 app = Flask(__name__)
 app.secret_key = "supersecretkey"
@@ -19,104 +21,7 @@ app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 def init_db():
   conn = sqlite3.connect("database.db")
   cursor = conn.cursor()
-  cursor.execute("""
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            email TEXT UNIQUE,
-            phone TEXT,
-            password TEXT,
-            referral_code TEXT,
-            referred_by TEXT,
-            balance REAL DEFAULT 0.0
-        )
-    """)
-  cursor.execute("""
-        CREATE TABLE IF NOT EXISTS videos (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            title TEXT,
-            video_type TEXT,
-            video_source TEXT,
-            duration TEXT
-        )
-    """)
-  cursor.execute("""
-        CREATE TABLE IF NOT EXISTS user_watched_videos (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER,
-            video_id INTEGER,
-            watched_date TEXT
-        )
-    """)
-  cursor.execute("""
-        CREATE TABLE IF NOT EXISTS deposit_requests (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER,
-            amount REAL,
-            mpesa_code TEXT,
-            status TEXT DEFAULT 'Pending'
-        )
-    """)
-  cursor.execute("""
-        CREATE TABLE IF NOT EXISTS withdrawal_requests (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER,
-            amount REAL,
-            phone TEXT,
-            status TEXT DEFAULT 'Pending'
-        )
-    """)
-  conn.commit()
-  conn.close()
-
-init_db()
-
-# --- EMAIL CONFIGURATION ---
-SMTP_SERVER = "smtp.gmail.com"
-SMTP_PORT = 587
-SENDER_EMAIL = "kenmurimi127@gmail.com"
-SENDER_PASSWORD = "xlsoarccekvebmph"
-
-import os
-import requests
-
-  # Pulls the key safely from Render/Environment variables
-def send_email_to_user(to_email, reset_code):
-  url = "https://api.brevo.com/v3/smtp/email"
-
-  # Pulls the key safely from Render/Environment variables
-  api_key = os.environ.get("BREVO_API_KEY")
-
-  payload = {
-      "sender": {
-          "name": "Money Linker",
-          # Change this line to your Brevo account email:
-          "email": "moneylinkerprogram@gmail.com",
-      },
-      "to": [{"email": to_email}],
-      "subject": "Money Linker Password Reset Code",
-      "textContent": (
-          f"Hello,\n\nYour password reset code is: {reset_code}\n\nEnter this"
-          " code on the website to reset your password."
-      ),
-  }
-
-
-
-
-
-
-
-#ken database
-
-import random
-import string
-import sqlite3
-
-
-def init_db():
-  conn = sqlite3.connect("database.db")
-  cursor = conn.cursor()
-
+  
   # Users table (with balance tracking for earnings)
   cursor.execute("""
         CREATE TABLE IF NOT EXISTS users (
@@ -129,7 +34,7 @@ def init_db():
             balance REAL DEFAULT 0.0
         )
     """)
-
+  
   # Videos table for Admin Panel (supports both links and uploaded files)
   cursor.execute("""
         CREATE TABLE IF NOT EXISTS videos (
@@ -140,7 +45,7 @@ def init_db():
             duration TEXT
         )
     """)
-
+  
   # Track watched videos per user daily (limit 4 videos/day)
   cursor.execute("""
         CREATE TABLE IF NOT EXISTS user_watched_videos (
@@ -150,7 +55,7 @@ def init_db():
             watched_date TEXT
         )
     """)
-
+  
   # Deposit requests table for admin verification
   cursor.execute("""
         CREATE TABLE IF NOT EXISTS deposit_requests (
@@ -161,8 +66,8 @@ def init_db():
             status TEXT DEFAULT 'Pending'
         )
     """)
-
-  # Withdrawal requests table for Tuesday/Friday payouts
+  
+  # Withdrawal requests table for payouts
   cursor.execute("""
         CREATE TABLE IF NOT EXISTS withdrawal_requests (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -172,30 +77,63 @@ def init_db():
             status TEXT DEFAULT 'Pending'
         )
     """)
-
   conn.commit()
   conn.close()
-
-
-
-
-
-
-
-
-
-
-
-
 
 # Initialize the database tables on startup
 init_db()
 
+# --- EMAIL CONFIGURATION (SMTP for Support Reports) ---
+SMTP_SERVER = "smtp.gmail.com"
+SMTP_PORT = 587
+SENDER_EMAIL = "kenmurimi127@gmail.com"
+SENDER_PASSWORD = "xlsoarccekvebmph"
+
+# --- BREVO HTTP API EMAIL FUNCTION (For Password Resets) ---
+def send_email_to_user(to_email, reset_code):
+  url = "https://api.brevo.com/v3/smtp/email"
+  api_key = os.environ.get("BREVO_API_KEY")
+
+  print(
+      f"DEBUG: Attempting to send email to {to_email} via Brevo. API Key loaded:"
+      f" {bool(api_key)}"
+  )
+
+  payload = {
+      "sender": {
+          "name": "Money Linker",
+          "email": "moneylinkerprogram@gmail.com",
+      },
+      "to": [{"email": to_email}],
+      "subject": "Money Linker Password Reset Code",
+      "textContent": (
+          f"Hello,\n\nYour password reset code is: {reset_code}\n\nEnter this"
+          " code on the website to reset your password."
+      ),
+  }
+
+  headers = {
+      "accept": "application/json",
+      "api-key": api_key,
+      "content-type": "application/json",
+  }
+
+  try:
+    response = requests.post(url, json=payload, headers=headers, timeout=5)
+    print(
+        f"DEBUG: Brevo response status code: {response.status_code}, body:"
+        f" {response.text}"
+    )
+    if response.status_code == 201:
+      return True
+    else:
+      return False
+  except Exception as e:
+    print(f"DEBUG: Exception during Brevo request: {e}")
+    return False
+
 
 def generate_unique_code():
-
-
-
   conn = sqlite3.connect("database.db")
   cursor = conn.cursor()
   while True:
@@ -208,19 +146,10 @@ def generate_unique_code():
       return code
 
 
-
-
-
-
-    # install as an app files
-
+# --- APP FILES ---
 @app.route("/sw.js")
 def service_worker():
     return send_from_directory("static", "sw.js")
-
-
-
-
 
 
 @app.route("/")
@@ -240,15 +169,7 @@ def home():
   return render_template("index.html", user=user, videos=videos)
 
 
-
-
-
-
-
-            #PROFILE
-
-
-
+# --- PROFILE ---
 @app.route("/profile", methods=["GET", "POST"])
 def profile():
   if "user" not in session:
@@ -265,7 +186,6 @@ def profile():
 
   my_ref_code = user[4]
 
-  # Count referrals
   cursor.execute(
       "SELECT COUNT(*) FROM users WHERE referred_by = ?", (my_ref_code,)
   )
@@ -304,17 +224,7 @@ def profile():
   return render_template("profile.html", user=user, ref_count=ref_count)
 
 
-
-
-
-# Simple Admin Protection (Change credentials as needed)
-
-
-             #ADMIN
-
-
-
-# Separate Admin Credentials
+# --- ADMIN CREDENTIALS ---
 ADMIN_EMAIL = "kenmurimi101@gmail.com"
 ADMIN_PASSWORD = "Km286720.!2840"
 
@@ -353,45 +263,31 @@ def admin_dashboard():
   )
 
 
-
-
-import os
-
-UPLOAD_FOLDER = "static/uploads"
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-
 @app.route("/admin/add-video", methods=["GET", "POST"])
 def admin_add_video():
-  # Check if admin is logged in
   if not session.get("admin_logged"):
     return redirect(url_for("admin_login"))
 
   if request.method == "POST":
     title = request.form.get("title")
-    video_type = request.form.get(
-        "video_type"
-    )  # e.g., 'file' or 'link' (if you have options)
+    video_type = request.form.get("video_type")
     duration = request.form.get("duration")
 
     video_source_value = ""
 
     if video_type == "link":
-      # If it's an external link (like YouTube)
       video_source_value = request.form.get("video_link")
     else:
-      # --- PUT YOUR FILE UPLOAD CODE HERE ---
       file = request.files.get("video_file")
       if file:
         filename = file.filename
         file.save(os.path.join(UPLOAD_FOLDER, filename))
-        video_source_value = filename  # Save the filename to use in database
+        video_source_value = filename
 
-    # Save everything into your database
     conn = sqlite3.connect("database.db")
     cursor = conn.cursor()
     cursor.execute(
-        "INSERT INTO videos (title, video_type, video_source, duration) VALUES"
-        " (?, ?, ?, ?)",
+        "INSERT INTO videos (title, video_type, video_source, duration) VALUES (?, ?, ?, ?)",
         (title, video_type, video_source_value, duration),
     )
     conn.commit()
@@ -401,9 +297,6 @@ def admin_add_video():
     return redirect(url_for("admin_videos"))
 
   return render_template("admin_add_video.html")
-
-
-
 
 
 @app.route("/admin/videos", methods=["GET", "POST"])
@@ -417,7 +310,7 @@ def admin_videos():
   if request.method == "POST":
     title = request.form.get("title")
     duration = request.form.get("duration")
-    upload_method = request.form.get("upload_method")  # 'link' or 'file'
+    upload_method = request.form.get("upload_method")
 
     video_source = ""
 
@@ -429,11 +322,10 @@ def admin_videos():
         filename = file.filename
         file_path = os.path.join(UPLOAD_FOLDER, filename)
         file.save(file_path)
-        video_source = filename  # Store just the filename
+        video_source = filename
 
     cursor.execute(
-        "INSERT INTO videos (title, video_type, video_source, duration) VALUES"
-        " (?, ?, ?, ?)",
+        "INSERT INTO videos (title, video_type, video_source, duration) VALUES (?, ?, ?, ?)",
         (title, upload_method, video_source, duration),
     )
     conn.commit()
@@ -447,26 +339,14 @@ def admin_videos():
   return render_template("admin_videos.html", videos=videos)
 
 
-
-
-
-
-
-
-
-
-
 @app.route("/admin/logout")
 def admin_logout():
   session.pop("admin_logged", None)
   return redirect(url_for("admin_login"))
 
 
-
-
 @app.route("/admin/videos/delete/<int:video_id>")
 def delete_video(video_id):
-  # Use the independent admin session check
   if not session.get("admin_logged"):
     return redirect(url_for("admin_login"))
 
@@ -479,9 +359,6 @@ def delete_video(video_id):
   return redirect(url_for("admin_videos"))
 
 
-# --- ADD THESE MISSING ADMIN MANAGEMENT ROUTES ---
-
-            #admin user dashboard
 @app.route("/admin/users")
 def admin_users():
   if not session.get("admin_logged"):
@@ -495,10 +372,6 @@ def admin_users():
   return render_template("admin_users.html", users=users)
 
 
-
-       #REQUEST
-
-
 @app.route("/admin/requests", methods=["GET", "POST"])
 def admin_requests():
     if not session.get("admin_logged"):
@@ -509,7 +382,7 @@ def admin_requests():
 
     if request.method == "POST":
         req_id = request.form.get("request_id")
-        req_type = request.form.get("req_type")  # 'deposit' or 'withdrawal'
+        req_type = request.form.get("req_type")
         action = request.form.get("action")
         verified_amount = request.form.get("verified_amount")
 
@@ -541,14 +414,12 @@ def admin_requests():
                     row = cursor.fetchone()
                     if row and row[1] != 'Approved':
                         user_id = row[0]
-                        # Deduct balance from user when admin confirms the payout
                         cursor.execute("UPDATE users SET balance = balance - ? WHERE id = ?", (actual_amount, user_id))
                         cursor.execute("UPDATE withdrawal_requests SET status = 'Approved', amount = ? WHERE id = ?", (actual_amount, req_id))
                         conn.commit()
                 except Exception as e:
                     print("Error approving withdrawal:", e)
 
-    # Fetch Deposit Requests safely
     try:
         cursor.execute("""
             SELECT deposit_requests.id, users.email, users.phone, deposit_requests.amount, deposit_requests.mpesa_code, deposit_requests.status
@@ -560,7 +431,6 @@ def admin_requests():
     except sqlite3.OperationalError:
         requests_list = []
 
-    # Fetch Withdrawal Requests safely
     try:
         cursor.execute("""
             SELECT withdrawal_requests.id, users.email, users.phone, withdrawal_requests.amount, withdrawal_requests.phone, withdrawal_requests.status
@@ -576,16 +446,6 @@ def admin_requests():
     return render_template("admin_requests.html", requests_list=requests_list, withdrawals_list=withdrawals_list)
 
 
-
-
-
-
-
-
-
-
-
-             #adminb  approve deposit
 @app.route("/admin/approve-deposit/<int:request_id>", methods=["POST"])
 def approve_deposit(request_id):
     if not session.get("admin_logged"):
@@ -593,32 +453,19 @@ def approve_deposit(request_id):
 
     conn = sqlite3.connect("database.db")
     cursor = conn.cursor()
-
-    # 1. Get the deposit request details (user_id and amount)
     cursor.execute("SELECT user_id, amount, status FROM deposit_requests WHERE id = ?", (request_id,))
     dep = cursor.fetchone()
 
     if dep and dep[2] == 'Pending':
         user_id = dep[0]
         amount = dep[1]
-
-        # 2. Add amount to user's balance
         cursor.execute("UPDATE users SET balance = balance + ? WHERE id = ?", (amount, user_id))
-
-        # 3. Update deposit request status to Approved
         cursor.execute("UPDATE deposit_requests SET status = 'Approved' WHERE id = ?", (request_id,))
-        
         conn.commit()
 
     conn.close()
     return redirect(url_for("admin_requests"))
 
-
-
-
-
-
-                #REPORYS
 
 @app.route("/admin/reports")
 def admin_reports():
@@ -636,8 +483,6 @@ def admin_reports():
   return render_template("admin_reports.html", reports=reports)
 
 
-
-
 @app.route("/admin/wipe-all-videos")
 def wipe_all_videos():
   if not session.get("admin_logged"):
@@ -653,8 +498,7 @@ def wipe_all_videos():
   return redirect(url_for("admin_dashboard"))
 
 
-         #DEPOSIT
-
+# --- DEPOSIT & WITHDRAWAL ---
 @app.route("/deposit", methods=["GET", "POST"])
 def deposit():
     if "user" not in session:
@@ -663,19 +507,6 @@ def deposit():
     conn = sqlite3.connect("database.db")
     cursor = conn.cursor()
 
-    # Automatically create the deposit_requests table if it doesn't exist yet
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS deposit_requests (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER,
-            amount REAL,
-            mpesa_code TEXT,
-            status TEXT
-        )
-    """)
-    conn.commit()
-
-    # Get user id
     cursor.execute(
         "SELECT id FROM users WHERE email = ? OR phone = ?",
         (session["user"], session["user"]),
@@ -692,7 +523,6 @@ def deposit():
         amount = request.form.get("amount")
         mpesa_code = request.form.get("mpesa_code")
 
-        # Save deposit request to the tracking table
         cursor.execute(
             "INSERT INTO deposit_requests (user_id, amount, mpesa_code, status) VALUES (?, ?, ?, 'Pending')",
             (user_id, amount, mpesa_code)
@@ -704,10 +534,6 @@ def deposit():
     return render_template("deposit.html", success_msg=success_msg)
 
 
-                  #withraw
-
-                  #withraw
- 
 @app.route('/withdraw', methods=['GET', 'POST'])
 def withdraw():
     if "user" not in session:
@@ -716,7 +542,6 @@ def withdraw():
     conn = sqlite3.connect('database.db')
     cursor = conn.cursor()
     
-    # Get user id and balance using session["user"] (matches login logic)
     cursor.execute(
         "SELECT id, balance FROM users WHERE email = ? OR phone = ?",
         (session["user"], session["user"]),
@@ -756,17 +581,16 @@ def withdraw():
     conn.close()
     return render_template('withdraw.html', pending_request=pending_request)
 
+
 @app.route('/cancel-withdrawal', methods=['POST'])
 def cancel_withdrawal():
     if "user" not in session:
         return redirect(url_for('login'))
         
     req_id = request.form.get('req_id')
-    
     conn = sqlite3.connect('database.db')
     cursor = conn.cursor()
     
-    # Get user_id safely from session
     cursor.execute(
         "SELECT id FROM users WHERE email = ? OR phone = ?",
         (session["user"], session["user"]),
@@ -781,14 +605,6 @@ def cancel_withdrawal():
     return redirect(url_for('withdraw'))
 
 
-
-
-
-
-
-
-            #ACCOUNT
-
 @app.route("/account")
 def account():
     if "user" not in session:
@@ -796,7 +612,6 @@ def account():
 
     conn = sqlite3.connect("database.db")
     cursor = conn.cursor()
-    
     cursor.execute(
         "SELECT balance FROM users WHERE email = ? OR phone = ?",
         (session["user"], session["user"]),
@@ -807,12 +622,6 @@ def account():
     balance = user[0] if user else 0.0
     return render_template("account.html", balance=balance)
 
-
-
-
-
-
-# inv3st and grow 
 
 @app.route("/invest")
 def invest():
@@ -832,19 +641,12 @@ def invest():
     return render_template("invest.html", balance=balance)
 
 
-
-
-
-
-#login
-
-
+# --- LOGIN / SIGNUP ---
 @app.route("/login", methods=["GET", "POST"])
 def login():
   if request.method == "POST":
     action = request.form.get("action")
 
-    # --- SIGN UP LOGIC ---
     if action == "signup":
       email = request.form.get("email")
       phone = request.form.get("phone")
@@ -853,15 +655,11 @@ def login():
 
       conn = sqlite3.connect("database.db")
       cursor = conn.cursor()
-
-      # Check how many users exist in the database
       cursor.execute("SELECT COUNT(*) FROM users")
       user_count = cursor.fetchone()[0]
 
       referred_by = None
-
       if user_count > 0:
-        # If users already exist, require a valid referral code
         cursor.execute(
             "SELECT * FROM users WHERE referral_code = ?", (ref_code_input,)
         )
@@ -872,11 +670,7 @@ def login():
           return redirect(url_for("login"))
         referred_by = ref_code_input
       else:
-        # Very first user needs no code
         referred_by = "System"
-
-      import random
-      import string
 
       new_ref_code = "".join(
           random.choices(string.ascii_uppercase + string.digits, k=6)
@@ -884,8 +678,7 @@ def login():
 
       try:
         cursor.execute(
-            "INSERT INTO users (email, phone, password, referral_code,"
-            " referred_by) VALUES (?, ?, ?, ?, ?)",
+            "INSERT INTO users (email, phone, password, referral_code, referred_by) VALUES (?, ?, ?, ?, ?)",
             (email, phone, password, new_ref_code, referred_by),
         )
         conn.commit()
@@ -897,7 +690,6 @@ def login():
 
       return redirect(url_for("login"))
 
-    # --- SIGN IN LOGIC ---
     elif action == "signin":
       identifier = request.form.get("identifier")
       password = request.form.get("password")
@@ -921,14 +713,7 @@ def login():
   return render_template("login.html")
 
 
-
-
-         #MY VIDEOS(IKO IN USER)
-
-
-import datetime
-import random
-
+# --- MY VIDEOS ---
 @app.route("/my-videos")
 def my_videos():
     if "user" not in session:
@@ -937,7 +722,6 @@ def my_videos():
     conn = sqlite3.connect("database.db")
     cursor = conn.cursor()
 
-    # Get current user ID and balance
     cursor.execute(
         "SELECT id, balance FROM users WHERE email = ? OR phone = ?",
         (session["user"], session["user"]),
@@ -950,7 +734,6 @@ def my_videos():
     user_id = user[0]
     user_balance = user[1]
 
-    # Check total approved deposits for this user
     cursor.execute("""
         SELECT SUM(amount) FROM deposit_requests 
         WHERE user_id = ? AND status = 'Approved'
@@ -960,7 +743,6 @@ def my_videos():
 
     today_str = datetime.date.today().isoformat()
 
-    # 1. Get all videos from database
     cursor.execute("SELECT * FROM videos")
     all_videos = cursor.fetchall()
 
@@ -971,7 +753,6 @@ def my_videos():
     else:
         daily_selection = []
 
-    # 2. Check watched status
     cursor.execute(
         "SELECT video_id FROM user_watched_videos WHERE user_id = ? AND watched_date = ?",
         (user_id, today_str),
@@ -994,30 +775,14 @@ def my_videos():
             }
         )
 
-
-
     conn.close()
     return render_template(
         "my_videos.html", 
         videos=videos_with_status, 
         balance=user_balance,
-        total_deposited=total_deposited  # <-- Add this line
+        total_deposited=total_deposited
     )
 
-
-
-
-
-
-
-
-
-
-      # COMPLETION OF VIDEIS
-
-import datetime
-import sqlite3
-from flask import jsonify, session
 
 @app.route("/complete-video/<int:video_id>", methods=["POST"])
 def complete_video(video_id):
@@ -1040,7 +805,6 @@ def complete_video(video_id):
         user_id = user[0]
         today_str = datetime.date.today().isoformat()
 
-        # Check if already watched today for reward
         cursor.execute(
             "SELECT * FROM user_watched_videos WHERE user_id = ? AND video_id = ? AND watched_date = ?",
             (user_id, video_id, today_str),
@@ -1048,18 +812,15 @@ def complete_video(video_id):
         already_watched = cursor.fetchone()
 
         if not already_watched:
-            # Mark as watched for earnings today
             cursor.execute(
                 "INSERT INTO user_watched_videos (user_id, video_id, watched_date) VALUES (?, ?, ?)",
                 (user_id, video_id, today_str),
             )
-            # Add 5 Ksh reward
             cursor.execute(
                 "UPDATE users SET balance = balance + 5.0 WHERE id = ?", (user_id,)
             )
             conn.commit()
 
-            # Get the newly updated balance to send back to frontend
             cursor.execute("SELECT balance FROM users WHERE id = ?", (user_id,))
             updated_user = cursor.fetchone()
             new_balance = updated_user[0] if updated_user else 0
@@ -1077,10 +838,7 @@ def complete_video(video_id):
         return jsonify({"success": False, "message": "Server error occurred"}), 500
 
 
-
-
-
-          #FORGET PASSWORD
+# --- FORGOT PASSWORD ---
 @app.route("/forgot", methods=["GET", "POST"])
 def forgot_password():
   if request.method == "GET":
@@ -1099,7 +857,6 @@ def forgot_password():
       session["reset_email"] = email
       session["reset_code"] = reset_code
 
-      # Attempt to send email, but safely catch any network blocks
       try:
         email_sent = send_email_to_user(email, reset_code)
       except Exception:
@@ -1120,14 +877,7 @@ def forgot_password():
   return redirect(url_for("login"))
 
 
-
-
-
-
-              #RESET PASSWORD
-
-
-
+# --- RESET PASSWORD ---
 @app.route("/reset-password", methods=["POST"])
 def reset_password():
   entered_code = request.form.get("reset_code")
@@ -1153,19 +903,11 @@ def reset_password():
     return render_template("login.html", show_reset_box=True)
 
 
-
-
-
-
-
-
-
-               #LOGOUT
-
+# --- LOGOUT ---
 @app.route("/logout")
 def logout():
   session.pop("user", None)
-  return redirect(url_for("login"))
+  return redirect(url_for("logout"))
 
 
 if __name__ == "__main__":
