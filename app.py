@@ -464,8 +464,6 @@ def admin_requests():
     return render_template("admin_requests.html", requests_list=requests_list, withdrawals_list=withdrawals_list)
 
 
-
-
 @app.route("/admin/approve-deposit/<int:deposit_id>", methods=["POST"])
 def approve_deposit(deposit_id):
     if not session.get("admin_logged"):
@@ -488,35 +486,43 @@ def approve_deposit(deposit_id):
         # 1. Mark deposit as approved
         cursor.execute("UPDATE deposit_requests SET status = 'Approved' WHERE id = ?", (deposit_id,))
 
-        # 2. Add the deposit amount to the depositing user's balance
+        # 2. Add deposit amount to the user's balance
         cursor.execute("UPDATE users SET balance = balance + ? WHERE id = ?", (amount, user_id))
 
-        # 3. Check how many approved deposits this user has had so far
+        # 3. Check how many approved deposits this user has had
         cursor.execute("""
             SELECT COUNT(*) FROM deposit_requests 
             WHERE user_id = ? AND status = 'Approved'
         """, (user_id,))
         approved_count = cursor.fetchone()[0]
 
-        # 4. If this is their FIRST approved deposit AND it's at least 100 Ksh, reward the referrer!
+        print(f"DEBUG: User {user_id} has {approved_count} approved deposit(s). Amount: {amount}")
+
+        # 4. If this is their first approved deposit and >= 100 Ksh
         if approved_count == 1 and amount >= 100:
-            # Find who referred this user
             cursor.execute("SELECT referred_by FROM users WHERE id = ?", (user_id,))
             ref_row = cursor.fetchone()
 
             if ref_row and ref_row[0]:
-                referrer_code = ref_row[0]
-                
-                # Credit 40 Ksh to the referrer's balance
+                referrer_code = ref_row[0].strip()
+                print(f"DEBUG: Found referrer code: '{referrer_code}'")
+
+                # Credit 40 Ksh to the referrer
                 cursor.execute("""
                     UPDATE users SET balance = balance + 40 
-                    WHERE referral_code = ?
+                    WHERE TRIM(referral_code) = ?
                 """, (referrer_code,))
+                
+                print(f"DEBUG: Credited 40 Ksh to referral code: {referrer_code}")
+            else:
+                print("DEBUG: No referrer found for this user.")
 
         conn.commit()
 
     conn.close()
     return redirect(url_for("admin_dashboard"))
+
+
 
 
 
