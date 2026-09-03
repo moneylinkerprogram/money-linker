@@ -77,29 +77,35 @@ SENDER_EMAIL = "kenmurimi127@gmail.com"
 SENDER_PASSWORD = "xlsoarccekvebmph"
 
 
-
-
-
+import os
 import requests
 
 
 def send_email_to_user(to_email, reset_code):
   url = "https://api.brevo.com/v3/smtp/email"
 
-  # Paste your Brevo API key here (or store it in Render Environment Variables)
-  api_key = "xkeysib-YOUR_ACTUAL_BREVO_API_KEY_HERE"
+  # Pulls the key safely from Render/Environment variables
+  api_key = os.environ.get("BREVO_API_KEY")
 
   payload = {
       "sender": {
           "name": "Money Linker",
-          "email": "kenmurimi127@gmail.com",  # Must be the email you used to sign up for Brevo
+          "email": "kenmurimi127@gmail.com",
       },
       "to": [{"email": to_email}],
       "subject": "Money Linker Password Reset Code",
-      (
-          "textContent"
-      ): f"Hello,\n\nYour password reset code is: {reset_code}\n\nEnter this code on the website to reset your password.",
+      "textContent": f"Hello,\n\nYour password reset code is: {reset_code}\n\nEnter this code on the website to reset your password.",
   }
+...
+
+
+
+
+
+
+
+
+
 
   headers = {
       "accept": "application/json",
@@ -109,7 +115,6 @@ def send_email_to_user(to_email, reset_code):
 
   try:
     response = requests.post(url, json=payload, headers=headers, timeout=5)
-    # Brevo returns status 201 Created on successful email submission
     if response.status_code == 201:
       return True
     else:
@@ -118,8 +123,6 @@ def send_email_to_user(to_email, reset_code):
   except Exception as e:
     print(f"HTTP Email API error: {e}")
     return False
-
-
 
 
 
