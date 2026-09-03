@@ -79,26 +79,51 @@ SENDER_PASSWORD = "xlsoarccekvebmph"
 
 
 
+
+import requests
+
+
 def send_email_to_user(to_email, reset_code):
+  url = "https://api.brevo.com/v3/smtp/email"
+
+  # Paste your Brevo API key here (or store it in Render Environment Variables)
+  api_key = "xkeysib-YOUR_ACTUAL_BREVO_API_KEY_HERE"
+
+  payload = {
+      "sender": {
+          "name": "Money Linker",
+          "email": "kenmurimi127@gmail.com",  # Must be the email you used to sign up for Brevo
+      },
+      "to": [{"email": to_email}],
+      "subject": "Money Linker Password Reset Code",
+      (
+          "textContent"
+      ): f"Hello,\n\nYour password reset code is: {reset_code}\n\nEnter this code on the website to reset your password.",
+  }
+
+  headers = {
+      "accept": "application/json",
+      "api-key": api_key,
+      "content-type": "application/json",
+  }
+
   try:
-    msg = MIMEMultipart()
-    msg["From"] = SENDER_EMAIL
-    msg["To"] = to_email
-    msg["Subject"] = "Money Linker Password Reset Code"
-
-    body = f"Your password reset code is: {reset_code}"
-    msg.attach(MIMEText(body, "plain"))
-
-    # Add timeout=3 so Render doesn't hang and timeout the worker!
-    server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=3)
-    server.starttls()
-    server.login(SENDER_EMAIL, SENDER_PASSWORD)
-    server.sendmail(SENDER_EMAIL, to_email, msg.as_string())
-    server.quit()
-    return True
+    response = requests.post(url, json=payload, headers=headers, timeout=5)
+    # Brevo returns status 201 Created on successful email submission
+    if response.status_code == 201:
+      return True
+    else:
+      print(f"Brevo API Error response: {response.text}")
+      return False
   except Exception as e:
-    print(f"SMTP Blocked/Failed on Render: {e}")
+    print(f"HTTP Email API error: {e}")
     return False
+
+
+
+
+
+
 
 
 
