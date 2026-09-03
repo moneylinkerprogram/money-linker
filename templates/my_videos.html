@@ -137,6 +137,7 @@ function markVideoFinished(videoId) {
     }
 }
 
+
 function claimReward(videoId) {
     const btn = document.getElementById("btn-" + videoId);
     btn.disabled = true;
@@ -155,11 +156,13 @@ function claimReward(videoId) {
             btn.className = "btn-watched";
             btn.disabled = true;
             
+            // Update displayed balance dynamically
             const balanceEl = document.getElementById("user-balance");
             if (balanceEl) {
                 balanceEl.innerText = data.new_balance.toFixed(2);
             }
 
+            // Update status badge container
             const statusContainer = document.getElementById("status-container-" + videoId);
             if (statusContainer) {
                 statusContainer.innerHTML = `
@@ -167,20 +170,25 @@ function claimReward(videoId) {
                     <span style="font-size: 12px; color: #38bdf8; margin-left: 8px;">(Reward Claimed • Replay Freely)</span>
                 `;
             }
-            alert(data.message);
+            // Removed the alert popup here so it's clean and seamless!
         } else {
-            alert(data.message);
+            alert(data.message); // Keep error alerts just in case something goes wrong
             btn.disabled = false;
             btn.innerText = "Claim 5 Ksh 🎁";
         }
     })
     .catch(err => {
         console.error("Error:", err);
-        alert("An error occurred while claiming your reward.");
         btn.disabled = false;
         btn.innerText = "Claim 5 Ksh 🎁";
     });
 }
+
+
+
+
+
+
 
 function closeDepositModal() {
     const modal = document.getElementById("depositModal");
