@@ -464,11 +464,12 @@ def admin_requests():
     return render_template("admin_requests.html", requests_list=requests_list, withdrawals_list=withdrawals_list)
 
 
+
+
 @app.route("/admin/approve-deposit/<int:deposit_id>", methods=["POST"])
 def approve_deposit(deposit_id):
-    # Ensure only admin can do this
-    if "user" not in session or session["user"] != "kenmurimi101@gmail.com":
-        return redirect(url_for("login"))
+    if not session.get("admin_logged"):
+        return redirect(url_for("admin_login"))
 
     conn = sqlite3.connect("database.db")
     cursor = conn.cursor()
@@ -484,28 +485,29 @@ def approve_deposit(deposit_id):
     user_id, amount, status = dep[0], dep[1], dep[2]
 
     if status != "Approved":
-        # 1. Mark this deposit request as Approved
+        # 1. Mark deposit as approved
         cursor.execute("UPDATE deposit_requests SET status = 'Approved' WHERE id = ?", (deposit_id,))
 
-        # 2. Add the deposit amount to the user's balance
+        # 2. Add the deposit amount to the depositing user's balance
         cursor.execute("UPDATE users SET balance = balance + ? WHERE id = ?", (amount, user_id))
 
-        # 3. Check how many approved deposits this user has had *before* this one (or including this one if it's the first)
+        # 3. Check how many approved deposits this user has had so far
         cursor.execute("""
             SELECT COUNT(*) FROM deposit_requests 
             WHERE user_id = ? AND status = 'Approved'
         """, (user_id,))
         approved_count = cursor.fetchone()[0]
 
-        # 4. If this is their FIRST approved deposit AND it is >= 100 Ksh, check for a referrer
+        # 4. If this is their FIRST approved deposit AND it's at least 100 Ksh, reward the referrer!
         if approved_count == 1 and amount >= 100:
+            # Find who referred this user
             cursor.execute("SELECT referred_by FROM users WHERE id = ?", (user_id,))
             ref_row = cursor.fetchone()
 
             if ref_row and ref_row[0]:
                 referrer_code = ref_row[0]
                 
-                # Give 40 Ksh to the user whose referral code matches
+                # Credit 40 Ksh to the referrer's balance
                 cursor.execute("""
                     UPDATE users SET balance = balance + 40 
                     WHERE referral_code = ?
@@ -515,6 +517,7 @@ def approve_deposit(deposit_id):
 
     conn.close()
     return redirect(url_for("admin_dashboard"))
+
 
 
 
