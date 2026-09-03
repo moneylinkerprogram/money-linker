@@ -463,6 +463,7 @@ def admin_requests():
     conn.close()
     return render_template("admin_requests.html", requests_list=requests_list, withdrawals_list=withdrawals_list)
 
+
 @app.route("/admin/approve-deposit/<int:deposit_id>", methods=["POST"])
 def approve_deposit(deposit_id):
     # Ensure only admin can do this
@@ -472,7 +473,7 @@ def approve_deposit(deposit_id):
     conn = sqlite3.connect("database.db")
     cursor = conn.cursor()
 
-    # Get the deposit details
+    # Get deposit details
     cursor.execute("SELECT user_id, amount, status FROM deposit_requests WHERE id = ?", (deposit_id,))
     dep = cursor.fetchone()
 
@@ -483,32 +484,32 @@ def approve_deposit(deposit_id):
     user_id, amount, status = dep[0], dep[1], dep[2]
 
     if status != "Approved":
-        # Mark deposit as approved
+        # 1. Mark this deposit request as Approved
         cursor.execute("UPDATE deposit_requests SET status = 'Approved' WHERE id = ?", (deposit_id,))
 
-        # Add the deposit amount to the user's balance
+        # 2. Add the deposit amount to the user's balance
         cursor.execute("UPDATE users SET balance = balance + ? WHERE id = ?", (amount, user_id))
 
-        # Check if this user was referred by someone and if this deposit qualifies for the referral bonus (e.g. >= 100 Ksh)
-        cursor.execute("SELECT referred_by FROM users WHERE id = ?", (user_id,))
-        ref_row = cursor.fetchone()
-        
-        if ref_row and ref_row[0]:
-            referrer_code = ref_row[0]
-            
-            # Check how many times a referral bonus has already been paid out for this user to ensure it's a one-time per-referral payout (or check if it's their first approved deposit of >= 100)
-            cursor.execute("""
-                SELECT COUNT(*) FROM deposit_requests 
-                WHERE user_id = ? AND status = 'Approved'
-            """, (user_id,))
-            approved_count = cursor.fetchone()[0]
+        # 3. Check how many approved deposits this user has had *before* this one (or including this one if it's the first)
+        cursor.execute("""
+            SELECT COUNT(*) FROM deposit_requests 
+            WHERE user_id = ? AND status = 'Approved'
+        """, (user_id,))
+        approved_count = cursor.fetchone()[0]
 
-            # If this is their first approved deposit and amount >= 100, reward the referrer 40 Ksh
-            if approved_count == 1 and amount >= 100:
+        # 4. If this is their FIRST approved deposit AND it is >= 100 Ksh, check for a referrer
+        if approved_count == 1 and amount >= 100:
+            cursor.execute("SELECT referred_by FROM users WHERE id = ?", (user_id,))
+            ref_row = cursor.fetchone()
+
+            if ref_row and ref_row[0]:
+                referrer_code = ref_row[0]
+                
+                # Give 40 Ksh to the user whose referral code matches
                 cursor.execute("""
                     UPDATE users SET balance = balance + 40 
-                    WHERE referral_code = ? OR phone = ? OR email = ?
-                """, (referrer_code, referrer_code, referrer_code))
+                    WHERE referral_code = ?
+                """, (referrer_code,))
 
         conn.commit()
 
@@ -517,9 +518,14 @@ def approve_deposit(deposit_id):
 
 
 
+
+
+
+
+
 @app.route("/admin/reports")
 def admin_reports():
-    # Make sure session exists and user is the authorized admin
+    # Check if a user is logged in and if their session value matches your admin email
     if "user" not in session or session["user"] != "kenmurimi101@gmail.com":
         return redirect(url_for("login"))
 
