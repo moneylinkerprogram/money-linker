@@ -1051,7 +1051,9 @@ def reset_password():
 @app.route("/logout")
 def logout():
   session.pop("user", None)
-  return redirect(url_for("logout"))
+  return redirect(url_for("login"))
+
+
 
 
 if __name__ == "__main__":
