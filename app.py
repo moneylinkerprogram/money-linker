@@ -5,7 +5,7 @@ import random
 import smtplib
 import string
 import sqlite3
-from flask import Flask, flash, redirect, render_template, request, session, url_for
+from flask import Flask, flash, redirect, render_template, request, session, url_for, jsonify, send_from_directory
 
 app = Flask(__name__)
 app.secret_key = "supersecretkey"
@@ -15,23 +15,82 @@ UPLOAD_FOLDER = "static/uploads"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 
+# --- DATABASE SETUP ON STARTUP ---
+def init_db():
+  conn = sqlite3.connect("database.db")
+  cursor = conn.cursor()
+  cursor.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            email TEXT UNIQUE,
+            phone TEXT,
+            password TEXT,
+            referral_code TEXT,
+            referred_by TEXT,
+            balance REAL DEFAULT 0.0
+        )
+    """)
+  cursor.execute("""
+        CREATE TABLE IF NOT EXISTS videos (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT,
+            video_type TEXT,
+            video_source TEXT,
+            duration TEXT
+        )
+    """)
+  cursor.execute("""
+        CREATE TABLE IF NOT EXISTS user_watched_videos (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
+            video_id INTEGER,
+            watched_date TEXT
+        )
+    """)
+  cursor.execute("""
+        CREATE TABLE IF NOT EXISTS deposit_requests (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
+            amount REAL,
+            mpesa_code TEXT,
+            status TEXT DEFAULT 'Pending'
+        )
+    """)
+  cursor.execute("""
+        CREATE TABLE IF NOT EXISTS withdrawal_requests (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
+            amount REAL,
+            phone TEXT,
+            status TEXT DEFAULT 'Pending'
+        )
+    """)
+  conn.commit()
+  conn.close()
+
+init_db()
+
 # --- EMAIL CONFIGURATION ---
 SMTP_SERVER = "smtp.gmail.com"
-
-
-
-
-
-
-
-
-
 SMTP_PORT = 587
 SENDER_EMAIL = "kenmurimi127@gmail.com"
-SENDER_PASSWORD = "xlsoarccekvebmph"  # App password with spaces removed
-
+SENDER_PASSWORD = "xlsoarccekvebmph"
 
 def send_email_to_user(recipient_email, reset_code):
+    # (Your email function code continues here...)
+
+
+
+
+
+
+
+
+
+
+
+
+
   try:
     print(f"DEBUG: Sending reset code {reset_code} to {recipient_email}")
 
@@ -1069,6 +1128,8 @@ def forgot_password():
 
               #RESET PASSWORD
 
+
+
 @app.route("/reset-password", methods=["POST"])
 def reset_password():
   entered_code = request.form.get("reset_code")
@@ -1092,7 +1153,16 @@ def reset_password():
   else:
     flash("Invalid reset code. Please try again.", "danger")
     return render_template("login.html", show_reset_box=True)
-         
+
+
+
+
+
+
+
+
+
+
 
                #LOGOUT
 
