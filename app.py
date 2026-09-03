@@ -531,8 +531,6 @@ def approve_deposit(deposit_id):
         """, (user_id,))
         approved_count = cursor.fetchone()[0]
 
-        print(f"DEBUG: User {user_id} has {approved_count} approved deposit(s). Amount: {amount}")
-
         # 4. If this is their first approved deposit and >= 100 Ksh
         if approved_count == 1 and amount >= 100:
             cursor.execute("SELECT referred_by FROM users WHERE id = ?", (user_id,))
@@ -540,22 +538,23 @@ def approve_deposit(deposit_id):
 
             if ref_row and ref_row[0]:
                 referrer_code = ref_row[0].strip()
-                print(f"DEBUG: Found referrer code: '{referrer_code}'")
-
-                # Credit 40 Ksh to the referrer
-                cursor.execute("""
-                    UPDATE users SET balance = balance + 40 
-                    WHERE TRIM(referral_code) = ?
-                """, (referrer_code,))
                 
-                print(f"DEBUG: Credited 40 Ksh to referral code: {referrer_code}")
-            else:
-                print("DEBUG: No referrer found for this user.")
+                # Make sure we don't try to look up "System" as a referral code user
+                if referrer_code and referrer_code != "System":
+                    # Credit 40 Ksh to the referrer
+                    cursor.execute("""
+                        UPDATE users SET balance = balance + 40 
+                        WHERE TRIM(referral_code) = ?
+                    """, (referrer_code,))
 
         conn.commit()
 
     conn.close()
     return redirect(url_for("admin_dashboard"))
+
+
+
+
 
 
 
@@ -682,6 +681,10 @@ def withdraw():
     
     conn.close()
     return render_template('withdraw.html', pending_request=pending_request)
+
+
+
+
 
 
 @app.route('/cancel-withdrawal', methods=['POST'])
