@@ -6,8 +6,10 @@ import smtplib
 import string
 import sqlite3
 import datetime
-from flask import Flask, flash, redirect, render_template, request, session, url_for, jsonify, send_from_directory
+from flask import Flask, flash, redirect, render_template, request, session
 import requests
+import psycopg2
+from urllib.parse import urlparse
 
 app = Flask(__name__)
 app.secret_key = "supersecretkey"
@@ -17,95 +19,161 @@ UPLOAD_FOLDER = "static/uploads"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 
+# --- DATABASE CONFIGURATION (Supabase / Postgres or Local SQLite) ---
+DATABASE_URL = os.environ.get("DATABASE_URL")
 
-
-
+def get_db_connection():
+    if DATABASE_URL:
+        parsed_url = urlparse(DATABASE_URL)
+        return psycopg2.connect(
+            database=parsed_url.path[1:],
+            user=parsed_url.username,
+            password=parsed_url.password,
+            host=parsed_url.hostname,
+            port=parsed_url.port
+        )
+    else:
+        return sqlite3.connect("database.db")
 
 # --- DATABASE SETUP ON STARTUP ---
 def init_db():
-  conn = sqlite3.connect("database.db")
-  cursor = conn.cursor()
+    conn = get_db_connection()
+    cursor = conn.cursor()
 
-  # Users table (with balance tracking for earnings)
-  cursor.execute("""
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            email TEXT UNIQUE,
-            phone TEXT,
-            password TEXT,
-            referral_code TEXT,
-            referred_by TEXT,
-            balance REAL DEFAULT 0.0
-        )
-    """)
+    if DATABASE_URL:
+        # PostgreSQL Schema (Supabase) - Uses SERIAL instead of AUTOINCREMENT
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                id SERIAL PRIMARY KEY,
+                email TEXT UNIQUE,
+                phone TEXT,
+                password TEXT,
+                referral_code TEXT,
+                referred_by TEXT,
+                balance REAL DEFAULT 0.0
+            )
+        """)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS videos (
+                id SERIAL PRIMARY KEY,
+                title TEXT,
+                video_type TEXT,
+                video_source TEXT,
+                duration TEXT
+            )
+        """)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS user_watched_videos (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER,
+                video_id INTEGER,
+                watched_date TEXT
+            )
+        """)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS deposit_requests (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER,
+                amount REAL,
+                mpesa_code TEXT,
+                status TEXT DEFAULT 'Pending'
+            )
+        """)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS withdrawal_requests (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER,
+                amount REAL,
+                phone TEXT,
+                status TEXT DEFAULT 'Pending'
+            )
+        """)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS reports (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER,
+                email TEXT,
+                phone TEXT,
+                message TEXT,
+                date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+    else:
+        # Local SQLite Schema - Uses AUTOINCREMENT
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                email TEXT UNIQUE,
+                phone TEXT,
+                password TEXT,
+                referral_code TEXT,
+                referred_by TEXT,
+                balance REAL DEFAULT 0.0
+            )
+        """)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS videos (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                title TEXT,
+                video_type TEXT,
+                video_source TEXT,
+                duration TEXT
+            )
+        """)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS user_watched_videos (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER,
+                video_id INTEGER,
+                watched_date TEXT
+            )
+        """)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS deposit_requests (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER,
+                amount REAL,
+                mpesa_code TEXT,
+                status TEXT DEFAULT 'Pending'
+            )
+        """)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS withdrawal_requests (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER,
+                amount REAL,
+                phone TEXT,
+                status TEXT DEFAULT 'Pending'
+            )
+        """)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS reports (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER,
+                email TEXT,
+                phone TEXT,
+                message TEXT,
+                date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
 
-  # Videos table for Admin Panel (supports both links and uploaded files)
-  cursor.execute("""
-        CREATE TABLE IF NOT EXISTS videos (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            title TEXT,
-            video_type TEXT,
-            video_source TEXT,
-            duration TEXT
-        )
-    """)
+    conn.commit()
+    conn.close()
 
-  # Track watched videos per user daily (limit 4 videos/day)
-  cursor.execute("""
-        CREATE TABLE IF NOT EXISTS user_watched_videos (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER,
-            video_id INTEGER,
-            watched_date TEXT
-        )
-    """)
-
-  # Deposit requests table for admin verification
-  cursor.execute("""
-        CREATE TABLE IF NOT EXISTS deposit_requests (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER,
-            amount REAL,
-            mpesa_code TEXT,
-            status TEXT DEFAULT 'Pending'
-        )
-    """)
-
-  # Withdrawal requests table for payouts
-  cursor.execute("""
-        CREATE TABLE IF NOT EXISTS withdrawal_requests (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER,
-            amount REAL,
-            phone TEXT,
-            status TEXT DEFAULT 'Pending'
-        )
-    """)
-
-  # Support reports table for user feedback
-  cursor.execute("""
-        CREATE TABLE IF NOT EXISTS reports (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER,
-            email TEXT,
-            phone TEXT,
-            message TEXT,
-            date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
-
-  conn.commit()
-  conn.close()
-
-
-
-
-
-
-
-
-# Initialize the database tables on startup
 init_db()
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # --- EMAIL CONFIGURATION (SMTP for Support Reports) ---
 SMTP_SERVER = "smtp.gmail.com"
@@ -158,7 +226,7 @@ def send_email_to_user(to_email, reset_code):
 
 
 def generate_unique_code():
-  conn = sqlite3.connect("database.db")
+  conn = get_db_connection()
   cursor = conn.cursor()
   while True:
     code = "".join(
@@ -181,7 +249,7 @@ def home():
   if "user" not in session:
     return redirect(url_for("login"))
 
-  conn = sqlite3.connect("database.db")
+  conn = get_db_connection()
   cursor = conn.cursor()
   cursor.execute("SELECT * FROM users WHERE email = ?", (session["user"],))
   user = cursor.fetchone()
@@ -201,7 +269,7 @@ def profile():
     if "user" not in session:
         return redirect(url_for("login"))
 
-    conn = sqlite3.connect("database.db")
+    conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM users WHERE email = ? OR phone = ?", (session["user"], session["user"]))
     user = cursor.fetchone()
@@ -267,7 +335,7 @@ def debug_referrals():
     if not session.get("admin_logged"):
         return redirect(url_for("admin_login"))
 
-    conn = sqlite3.connect("database.db")
+    conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT id, email, referral_code, referred_by, balance FROM users")
     all_users = cursor.fetchall()
@@ -302,7 +370,7 @@ def admin_dashboard():
   if not session.get("admin_logged"):
     return redirect(url_for("admin_login"))
 
-  conn = sqlite3.connect("database.db")
+  conn = get_db_connection()
   cursor = conn.cursor()
   cursor.execute("SELECT COUNT(*) FROM users")
   user_count = cursor.fetchone()[0]
@@ -337,7 +405,7 @@ def admin_add_video():
         file.save(os.path.join(UPLOAD_FOLDER, filename))
         video_source_value = filename
 
-    conn = sqlite3.connect("database.db")
+    conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute(
         "INSERT INTO videos (title, video_type, video_source, duration) VALUES (?, ?, ?, ?)",
@@ -357,7 +425,7 @@ def admin_videos():
   if not session.get("admin_logged"):
     return redirect(url_for("admin_login"))
 
-  conn = sqlite3.connect("database.db")
+  conn = get_db_connection()
   cursor = conn.cursor()
 
   if request.method == "POST":
@@ -403,7 +471,7 @@ def delete_video(video_id):
   if not session.get("admin_logged"):
     return redirect(url_for("admin_login"))
 
-  conn = sqlite3.connect("database.db")
+  conn = get_db_connection()
   cursor = conn.cursor()
   cursor.execute("DELETE FROM videos WHERE id = ?", (video_id,))
   conn.commit()
@@ -417,7 +485,7 @@ def admin_users():
   if not session.get("admin_logged"):
     return redirect(url_for("admin_login"))
 
-  conn = sqlite3.connect("database.db")
+  conn = get_db_connection()
   cursor = conn.cursor()
   cursor.execute("SELECT * FROM users ORDER BY id DESC")
   users = cursor.fetchall()
@@ -430,7 +498,7 @@ def admin_requests():
     if not session.get("admin_logged"):
         return redirect(url_for("admin_login"))
 
-    conn = sqlite3.connect("database.db")
+    conn = get_db_connection()
     cursor = conn.cursor()
 
     if request.method == "POST":
@@ -531,7 +599,7 @@ def approve_deposit(deposit_id):
     if not session.get("admin_logged"):
         return redirect(url_for("admin_login"))
 
-    conn = sqlite3.connect("database.db")
+    conn = get_db_connection()
     cursor = conn.cursor()
 
     # Get deposit details
@@ -594,7 +662,7 @@ def admin_reports():
     if not session.get("admin_logged"):
         return redirect(url_for("admin_login"))
 
-    conn = sqlite3.connect("database.db")
+    conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT id, email, phone, message, date FROM reports ORDER BY id DESC")
     reports = cursor.fetchall()
@@ -616,7 +684,7 @@ def wipe_all_videos():
   if not session.get("admin_logged"):
     return redirect(url_for("admin_login"))
 
-  conn = sqlite3.connect("database.db")
+  conn = get_db_connection()
   cursor = conn.cursor()
   cursor.execute("DELETE FROM videos")
   conn.commit()
@@ -632,7 +700,7 @@ def deposit():
     if "user" not in session:
         return redirect(url_for("login"))
 
-    conn = sqlite3.connect("database.db")
+    conn = get_db_connection()
     cursor = conn.cursor()
 
     cursor.execute(
@@ -667,7 +735,7 @@ def withdraw():
     if "user" not in session:
         return redirect(url_for('login'))
     
-    conn = sqlite3.connect('database.db')
+    conn = get_db_connection()
     cursor = conn.cursor()
     
     cursor.execute(
@@ -720,7 +788,7 @@ def cancel_withdrawal():
         return redirect(url_for('login'))
         
     req_id = request.form.get('req_id')
-    conn = sqlite3.connect('database.db')
+    conn = get_db_connection()
     cursor = conn.cursor()
     
     cursor.execute(
@@ -742,7 +810,7 @@ def account():
     if "user" not in session:
         return redirect(url_for("login"))
 
-    conn = sqlite3.connect("database.db")
+    conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute(
         "SELECT balance FROM users WHERE email = ? OR phone = ?",
@@ -760,7 +828,7 @@ def invest():
     if "user" not in session:
         return redirect(url_for("login"))
 
-    conn = sqlite3.connect("database.db")
+    conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute(
         "SELECT balance FROM users WHERE email = ? OR phone = ?",
@@ -785,7 +853,7 @@ def login():
       password = request.form.get("password")
       ref_code_input = request.form.get("referral_code")
 
-      conn = sqlite3.connect("database.db")
+      conn = get_db_connection()
       cursor = conn.cursor()
       cursor.execute("SELECT COUNT(*) FROM users")
       user_count = cursor.fetchone()[0]
@@ -826,7 +894,7 @@ def login():
       identifier = request.form.get("identifier")
       password = request.form.get("password")
 
-      conn = sqlite3.connect("database.db")
+      conn = get_db_connection()
       cursor = conn.cursor()
       cursor.execute(
           "SELECT * FROM users WHERE (email = ? OR phone = ?) AND password = ?",
@@ -852,7 +920,7 @@ def my_videos():
     if "user" not in session:
         return redirect(url_for("login"))
 
-    conn = sqlite3.connect("database.db")
+    conn = get_db_connection()
     cursor = conn.cursor()
 
     cursor.execute(
@@ -934,7 +1002,7 @@ def complete_video(video_id):
         return jsonify({"success": False, "message": "Unauthorized"}), 401
 
     try:
-        conn = sqlite3.connect("database.db")
+        conn = get_db_connection()
         cursor = conn.cursor()
 
         cursor.execute(
@@ -990,7 +1058,7 @@ def forgot_password():
 
   try:
     email = request.form.get("reset_email")
-    conn = sqlite3.connect("database.db")
+    conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM users WHERE email = ?", (email,))
     user = cursor.fetchone()
@@ -1029,7 +1097,7 @@ def reset_password():
 
   if "reset_code" in session and entered_code == session.get("reset_code"):
     email = session.get("reset_email")
-    conn = sqlite3.connect("database.db")
+    conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute(
         "UPDATE users SET password = ? WHERE email = ?", (new_password, email)
