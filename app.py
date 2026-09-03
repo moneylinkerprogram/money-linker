@@ -518,16 +518,11 @@ def approve_deposit(deposit_id):
 
 
 
-
-
-
-
-
 @app.route("/admin/reports")
 def admin_reports():
-    # Check if a user is logged in and if their session value matches your admin email
-    if "user" not in session or session["user"] != "kenmurimi101@gmail.com":
-        return redirect(url_for("login"))
+    # Check if the admin is logged in using the correct session variable
+    if not session.get("admin_logged"):
+        return redirect(url_for("admin_login"))
 
     conn = sqlite3.connect("database.db")
     cursor = conn.cursor()
@@ -536,6 +531,9 @@ def admin_reports():
     conn.close()
 
     return render_template("admin_reports.html", reports=reports)
+
+
+
 
 
 
