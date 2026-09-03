@@ -517,11 +517,9 @@ def approve_deposit(deposit_id):
 
 
 
-
-
-
 @app.route("/admin/reports")
 def admin_reports():
+    # Make sure session exists and user is the authorized admin
     if "user" not in session or session["user"] != "kenmurimi101@gmail.com":
         return redirect(url_for("login"))
 
@@ -532,6 +530,9 @@ def admin_reports():
     conn.close()
 
     return render_template("admin_reports.html", reports=reports)
+
+
+
 
 
 

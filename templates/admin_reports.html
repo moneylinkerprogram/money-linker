@@ -3,34 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin - Reports</title>
+    <title>Admin - User Reports</title>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background: #0f172a; color: #f8fafc; padding-bottom: 50px; }
-        .admin-nav { display: flex; background: #1e293b; border-bottom: 1px solid #334155; overflow-x: auto; }
-        .admin-nav a { flex: 1; padding: 15px 20px; text-align: center; color: #94a3b8; text-decoration: none; font-weight: 600; white-space: nowrap; }
-        .admin-nav a.active, .admin-nav a:hover { color: #fff; background: #059669; }
-        .container { max-width: 900px; margin: 30px auto; padding: 0 15px; }
-        h2 { margin-bottom: 20px; color: #38bdf8; }
-        .card { background: #1e293b; padding: 20px; border-radius: 8px; border: 1px solid #334155; text-align: center; color: #94a3b8; }
+        body { font-family: Arial, sans-serif; background: #0f172a; color: #fff; padding: 20px; margin: 0; }
+        .container { max-width: 800px; margin: 0 auto; }
+        h2 { color: #38bdf8; }
+        .report-card { background: #1e293b; padding: 15px; border-radius: 10px; margin-bottom: 15px; border: 1px solid #334155; }
+        .report-header { display: flex; justify-content: space-between; font-size: 13px; color: #94a3b8; margin-bottom: 8px; }
+        .back-btn { display: inline-block; background: #334155; color: #fff; text-decoration: none; padding: 8px 15px; border-radius: 6px; margin-bottom: 20px; }
     </style>
 </head>
 <body>
+    <div class="container">
+        <a href="/admin" class="back-btn">← Back to Admin Dashboard</a>
+        <h2>User Support Reports</h2>
 
-<div class="admin-nav">
-    <a href="/admin/dashboard">Dashboard</a>
-    <a href="/admin/videos">Videos</a>
-    <a href="/admin/users">Users</a>
-    <a href="/admin/requests">Request</a>
-    <a href="/admin/reports" class="active">Reports</a>
-</div>
-
-<div class="container">
-    <h2>Support & Issue Reports</h2>
-    <div class="card">
-        <p>Support reports are currently being forwarded directly to your email (kenmurimi127@gmail.com). No saved records in database yet.</p>
+        {% if reports %}
+            {% for r in reports %}
+            <div class="report-card">
+                <div class="report-header">
+                    <span><strong>Email:</strong> {{ r[1] }} | <strong>Phone:</strong> {{ r[2] }}</span>
+                    <span>{{ r[4] }}</span>
+                </div>
+                <p style="margin: 0; color: #cbd5e1; line-height: 1.5;">{{ r[3] }}</p>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="report-card" style="text-align: center; color: #94a3b8;">
+                <p>No reports submitted yet.</p>
+            </div>
+        {% endif %}
     </div>
-</div>
-
 </body>
 </html>
