@@ -1098,9 +1098,11 @@ def complete_video(video_id):
 
           #FORGET PASSWORD
 
-
-@app.route("/forgot", methods=["POST"])
+@app.route("/forgot", methods=["GET", "POST"])
 def forgot_password():
+  if request.method == "GET":
+    return redirect(url_for("login"))
+
   email = request.form.get("reset_email")
   conn = sqlite3.connect("database.db")
   cursor = conn.cursor()
@@ -1122,9 +1124,11 @@ def forgot_password():
           f"Reset code successfully sent to {email}. Check your inbox!",
           "success",
       )
-      return render_template("login.html", show_reset_box=True)
     else:
-      flash("Failed to send email. Check your SMTP configurations.", "danger")
+      # Fallback so you can still test it even if Render blocks outbound SMTP ports!
+      flash(f"Debug Reset Code (SMTP Blocked): {reset_code}", "warning")
+      
+    return render_template("login.html", show_reset_box=True)
   else:
     flash("Email not found in database.", "danger")
 
@@ -1159,8 +1163,6 @@ def reset_password():
   else:
     flash("Invalid reset code. Please try again.", "danger")
     return render_template("login.html", show_reset_box=True)
-
-
 
 
 
