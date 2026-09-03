@@ -257,7 +257,12 @@ def home():
 
 
 
+
+
+
+
             #PROFILE
+
 
 
 @app.route("/profile", methods=["GET", "POST"])
@@ -276,7 +281,7 @@ def profile():
 
   my_ref_code = user[4]
 
-  # Count how many people used this user's referral code
+  # Count referrals
   cursor.execute(
       "SELECT COUNT(*) FROM users WHERE referred_by = ?", (my_ref_code,)
   )
@@ -300,14 +305,15 @@ def profile():
       )
       msg.attach(MIMEText(body, "plain"))
 
-      server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
+      server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=10)
       server.starttls()
       server.login(SENDER_EMAIL, SENDER_PASSWORD)
       server.sendmail(SENDER_EMAIL, "kenmurimi127@gmail.com", msg.as_string())
       server.quit()
       flash("Your report has been sent successfully!", "success")
     except Exception as e:
-      flash(f"Failed to send report: {e}", "danger")
+      print(f"Profile report error: {e}")
+      flash("Your report was submitted, but email notification failed.", "warning")
 
     return redirect(url_for("profile"))
 
@@ -316,8 +322,8 @@ def profile():
 
 
 
-# Simple Admin Protection (Change credentials as needed)
 
+# Simple Admin Protection (Change credentials as needed)
 
 
              #ADMIN
