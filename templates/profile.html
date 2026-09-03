@@ -153,6 +153,9 @@
         }
     </style>
 </head>
+
+
+
 <body>
 
 <div class="dashboard">
@@ -177,30 +180,19 @@
     <div class="profile-group" style="background: #fff; margin-bottom: 0;">
         <label style="color: #0f172a;">Report Issue / Support</label>
         <form method="POST" action="/profile">
-            <textarea name="report_message" required placeholder="Describe your issue or report..."></textarea>
-            <button type="submit">Send Report</button>
+            <textarea name="report_message" required placeholder="Describe your issue or feedback..." rows="3" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1; margin-bottom: 10px;"></textarea>
+            <button type="submit" style="background: #059669; color: #fff; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-weight: bold;">Send Report</button>
         </form>
     </div>
 </div>
-
-
-
 
 <!-- FIXED BOTTOM NAVIGATION BAR -->
 <div class="bottom-nav">
     <a href="/" class="nav-item">Home</a>
     <a href="/my-videos" class="nav-item">My videos</a>
     <a href="/account" class="nav-item">Account</a>
-    <a href="/profile" class="nav-item">My profile</a>
+    <a href="/profile" class="nav-item active">My profile</a>
 </div>
-
-
-
-
-
-
-
-
 
 </body>
 </html>

@@ -17,11 +17,15 @@ UPLOAD_FOLDER = "static/uploads"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 
+
+
+
+
 # --- DATABASE SETUP ON STARTUP ---
 def init_db():
   conn = sqlite3.connect("database.db")
   cursor = conn.cursor()
-  
+
   # Users table (with balance tracking for earnings)
   cursor.execute("""
         CREATE TABLE IF NOT EXISTS users (
@@ -34,7 +38,7 @@ def init_db():
             balance REAL DEFAULT 0.0
         )
     """)
-  
+
   # Videos table for Admin Panel (supports both links and uploaded files)
   cursor.execute("""
         CREATE TABLE IF NOT EXISTS videos (
@@ -45,7 +49,7 @@ def init_db():
             duration TEXT
         )
     """)
-  
+
   # Track watched videos per user daily (limit 4 videos/day)
   cursor.execute("""
         CREATE TABLE IF NOT EXISTS user_watched_videos (
@@ -55,7 +59,7 @@ def init_db():
             watched_date TEXT
         )
     """)
-  
+
   # Deposit requests table for admin verification
   cursor.execute("""
         CREATE TABLE IF NOT EXISTS deposit_requests (
@@ -66,7 +70,7 @@ def init_db():
             status TEXT DEFAULT 'Pending'
         )
     """)
-  
+
   # Withdrawal requests table for payouts
   cursor.execute("""
         CREATE TABLE IF NOT EXISTS withdrawal_requests (
@@ -77,8 +81,28 @@ def init_db():
             status TEXT DEFAULT 'Pending'
         )
     """)
+
+  # Support reports table for user feedback
+  cursor.execute("""
+        CREATE TABLE IF NOT EXISTS reports (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
+            email TEXT,
+            phone TEXT,
+            message TEXT,
+            date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
   conn.commit()
   conn.close()
+
+
+
+
+
+
+
 
 # Initialize the database tables on startup
 init_db()
@@ -170,58 +194,52 @@ def home():
 
 
 # --- PROFILE ---
+
+
 @app.route("/profile", methods=["GET", "POST"])
 def profile():
-  if "user" not in session:
-    return redirect(url_for("login"))
+    if "user" not in session:
+        return redirect(url_for("login"))
 
-  conn = sqlite3.connect("database.db")
-  cursor = conn.cursor()
-  cursor.execute("SELECT * FROM users WHERE email = ?", (session["user"],))
-  user = cursor.fetchone()
+    conn = sqlite3.connect("database.db")
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM users WHERE email = ? OR phone = ?", (session["user"], session["user"]))
+    user = cursor.fetchone()
 
-  if not user:
-    conn.close()
-    return redirect(url_for("login"))
+    if not user:
+        conn.close()
+        return redirect(url_for("login"))
 
-  my_ref_code = user[4]
-
-  cursor.execute(
-      "SELECT COUNT(*) FROM users WHERE referred_by = ?", (my_ref_code,)
-  )
-  ref_count = cursor.fetchone()[0]
-  conn.close()
-
-  if request.method == "POST":
-    report_message = request.form.get("report_message")
+    user_id = user[0]
     user_email = user[1]
     user_phone = user[2]
+    my_ref_code = user[4]
 
-    try:
-      msg = MIMEMultipart()
-      msg["From"] = SENDER_EMAIL
-      msg["To"] = "kenmurimi127@gmail.com"
-      msg["Subject"] = f"Money Linker Support Report from {user_email}"
+    if request.method == "POST":
+        report_message = request.form.get("report_message")
+        
+        if report_message:
+            cursor.execute("""
+                INSERT INTO reports (user_id, email, phone, message) 
+                VALUES (?, ?, ?, ?)
+            """, (user_id, user_email, user_phone, report_message))
+            conn.commit()
+            flash("Your report has been sent to the admin successfully!", "success")
+        
+        conn.close()
+        return redirect(url_for("profile"))
 
-      body = (
-          f"New Report Received:\n\nUser Email: {user_email}\nPhone:"
-          f" {user_phone}\n\nReport Details:\n{report_message}"
-      )
-      msg.attach(MIMEText(body, "plain"))
+    cursor.execute(
+        "SELECT COUNT(*) FROM users WHERE referred_by = ?", (my_ref_code,)
+    )
+    ref_count = cursor.fetchone()[0]
+    conn.close()
 
-      server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=10)
-      server.starttls()
-      server.login(SENDER_EMAIL, SENDER_PASSWORD)
-      server.sendmail(SENDER_EMAIL, "kenmurimi127@gmail.com", msg.as_string())
-      server.quit()
-      flash("Your report has been sent successfully!", "success")
-    except Exception as e:
-      print(f"Profile report error: {e}")
-      flash("Your report was submitted, but email notification failed.", "warning")
+    return render_template("profile.html", user=user, ref_count=ref_count)
 
-    return redirect(url_for("profile"))
 
-  return render_template("profile.html", user=user, ref_count=ref_count)
+
+
 
 
 # --- ADMIN CREDENTIALS ---
@@ -445,42 +463,77 @@ def admin_requests():
     conn.close()
     return render_template("admin_requests.html", requests_list=requests_list, withdrawals_list=withdrawals_list)
 
-
-@app.route("/admin/approve-deposit/<int:request_id>", methods=["POST"])
-def approve_deposit(request_id):
-    if not session.get("admin_logged"):
-        return redirect(url_for("admin_login"))
+@app.route("/admin/approve-deposit/<int:deposit_id>", methods=["POST"])
+def approve_deposit(deposit_id):
+    # Ensure only admin can do this
+    if "user" not in session or session["user"] != "kenmurimi101@gmail.com":
+        return redirect(url_for("login"))
 
     conn = sqlite3.connect("database.db")
     cursor = conn.cursor()
-    cursor.execute("SELECT user_id, amount, status FROM deposit_requests WHERE id = ?", (request_id,))
+
+    # Get the deposit details
+    cursor.execute("SELECT user_id, amount, status FROM deposit_requests WHERE id = ?", (deposit_id,))
     dep = cursor.fetchone()
 
-    if dep and dep[2] == 'Pending':
-        user_id = dep[0]
-        amount = dep[1]
+    if not dep:
+        conn.close()
+        return redirect(url_for("admin_dashboard"))
+
+    user_id, amount, status = dep[0], dep[1], dep[2]
+
+    if status != "Approved":
+        # Mark deposit as approved
+        cursor.execute("UPDATE deposit_requests SET status = 'Approved' WHERE id = ?", (deposit_id,))
+
+        # Add the deposit amount to the user's balance
         cursor.execute("UPDATE users SET balance = balance + ? WHERE id = ?", (amount, user_id))
-        cursor.execute("UPDATE deposit_requests SET status = 'Approved' WHERE id = ?", (request_id,))
+
+        # Check if this user was referred by someone and if this deposit qualifies for the referral bonus (e.g. >= 100 Ksh)
+        cursor.execute("SELECT referred_by FROM users WHERE id = ?", (user_id,))
+        ref_row = cursor.fetchone()
+        
+        if ref_row and ref_row[0]:
+            referrer_code = ref_row[0]
+            
+            # Check how many times a referral bonus has already been paid out for this user to ensure it's a one-time per-referral payout (or check if it's their first approved deposit of >= 100)
+            cursor.execute("""
+                SELECT COUNT(*) FROM deposit_requests 
+                WHERE user_id = ? AND status = 'Approved'
+            """, (user_id,))
+            approved_count = cursor.fetchone()[0]
+
+            # If this is their first approved deposit and amount >= 100, reward the referrer 40 Ksh
+            if approved_count == 1 and amount >= 100:
+                cursor.execute("""
+                    UPDATE users SET balance = balance + 40 
+                    WHERE referral_code = ? OR phone = ? OR email = ?
+                """, (referrer_code, referrer_code, referrer_code))
+
         conn.commit()
 
     conn.close()
-    return redirect(url_for("admin_requests"))
+    return redirect(url_for("admin_dashboard"))
+
+
+
+
 
 
 @app.route("/admin/reports")
 def admin_reports():
-  if not session.get("admin_logged"):
-    return redirect(url_for("admin_login"))
+    if "user" not in session or session["user"] != "kenmurimi101@gmail.com":
+        return redirect(url_for("login"))
 
-  conn = sqlite3.connect("database.db")
-  cursor = conn.cursor()
-  try:
-    cursor.execute("SELECT * FROM reports ORDER BY id DESC")
+    conn = sqlite3.connect("database.db")
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, email, phone, message, date FROM reports ORDER BY id DESC")
     reports = cursor.fetchall()
-  except sqlite3.OperationalError:
-    reports = []
-  conn.close()
-  return render_template("admin_reports.html", reports=reports)
+    conn.close()
+
+    return render_template("admin_reports.html", reports=reports)
+
+
 
 
 @app.route("/admin/wipe-all-videos")
