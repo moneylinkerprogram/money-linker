@@ -450,8 +450,30 @@ def admin_requests():
                     row = cursor.fetchone()
                     if row and row[1] != 'Approved':
                         user_id = row[0]
+                        # 1. Add deposit amount to user's balance
                         cursor.execute("UPDATE users SET balance = balance + ? WHERE id = ?", (actual_amount, user_id))
                         cursor.execute("UPDATE deposit_requests SET status = 'Approved', amount = ? WHERE id = ?", (actual_amount, req_id))
+                        
+                        # 2. Check how many approved deposits this user has had
+                        cursor.execute("""
+                            SELECT COUNT(*) FROM deposit_requests 
+                            WHERE user_id = ? AND status = 'Approved'
+                        """, (user_id,))
+                        approved_count = cursor.fetchone()[0]
+
+                        # 3. If this is their first approved deposit and >= 100 Ksh, reward the referrer!
+                        if approved_count == 1 and actual_amount >= 100:
+                            cursor.execute("SELECT referred_by FROM users WHERE id = ?", (user_id,))
+                            ref_row = cursor.fetchone()
+
+                            if ref_row and ref_row[0]:
+                                referrer_code = ref_row[0].strip()
+                                if referrer_code and referrer_code != "System":
+                                    cursor.execute("""
+                                        UPDATE users SET balance = balance + 40 
+                                        WHERE TRIM(referral_code) = ?
+                                    """, (referrer_code,))
+
                         conn.commit()
                 except Exception as e:
                     print("Error approving deposit:", e)
@@ -497,6 +519,11 @@ def admin_requests():
 
     conn.close()
     return render_template("admin_requests.html", requests_list=requests_list, withdrawals_list=withdrawals_list)
+
+
+
+
+
 
 
 @app.route("/admin/approve-deposit/<int:deposit_id>", methods=["POST"])
