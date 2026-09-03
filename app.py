@@ -714,6 +714,7 @@ def login():
 
 
 # --- MY VIDEOS ---
+
 @app.route("/my-videos")
 def my_videos():
     if "user" not in session:
@@ -734,12 +735,16 @@ def my_videos():
     user_id = user[0]
     user_balance = user[1]
 
+    # Check total approved deposits for this user
     cursor.execute("""
         SELECT SUM(amount) FROM deposit_requests 
         WHERE user_id = ? AND status = 'Approved'
     """, (user_id,))
     dep_row = cursor.fetchone()
     total_deposited = dep_row[0] if dep_row and dep_row[0] else 0.0
+
+    # Determine if user needs to make the one-time 100 Ksh deposit
+    needs_deposit = total_deposited < 100
 
     today_str = datetime.date.today().isoformat()
 
@@ -780,8 +785,15 @@ def my_videos():
         "my_videos.html", 
         videos=videos_with_status, 
         balance=user_balance,
-        total_deposited=total_deposited
+        total_deposited=total_deposited,
+        needs_deposit=needs_deposit
     )
+
+
+
+
+
+
 
 
 @app.route("/complete-video/<int:video_id>", methods=["POST"])

@@ -79,6 +79,7 @@
         </div>
     {% endif %}
 </div>
+
 <!-- FIXED BOTTOM NAVIGATION BAR -->
 <div class="bottom-nav">
     <a href="/" class="nav-item">Home</a>
@@ -87,17 +88,16 @@
     <a href="/profile" class="nav-item">My profile</a>
 </div>
 
-<!-- Custom Deposit Modal Popup -->
-<div id="depositModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15, 23, 42, 0.8); z-index:1000; align-items:center; justify-content:center;">
-    <div style="background:#1e293b; padding:25px; border-radius:14px; max-width:400px; width:100%; text-align:center;">
+<!-- Custom Deposit Modal Popup (Triggers automatically if needs_deposit is true) -->
+<div id="depositModal" style="display: {% if needs_deposit %}flex{% else %}none{% endif %}; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15, 23, 42, 0.9); z-index:1000; align-items:center; justify-content:center;">
+    <div style="background:#1e293b; padding:25px; border-radius:14px; max-width:400px; width:100%; text-align:center; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
         <div style="font-size:36px; margin-bottom:10px;">🔒</div>
-        <h3 style="color:#38bdf8; margin-bottom:12px; font-size:20px;">Deposit Required to Unlock</h3>
+        <h3 style="color:#38bdf8; margin-bottom:12px; font-size:20px;">One-Time Activation Deposit</h3>
         <p style="color:#cbd5e1; font-size:14px; line-height:1.5; margin-bottom:20px;">
-            To start watching videos and earning rewards, you need to deposit a minimum of <strong>100 Ksh</strong>.
+            To unlock daily video rewards permanently, new accounts must make a one-time minimum deposit of <strong>100 Ksh</strong>. Once approved, you can watch videos anytime!
         </p>
         <div style="display:flex; gap:10px;">
-            <button onclick="closeDepositModal()" style="flex:1; background:#334155; color:#fff; border:none; padding:12px; border-radius:8px; cursor:pointer;">Cancel</button>
-            <a href="/deposit" style="flex:1; background:#059669; color:#fff; text-decoration:none; padding:12px; border-radius:8px; display:inline-block;">Deposit Now</a>
+            <a href="/deposit" style="flex:1; background:#059669; color:#fff; text-decoration:none; padding:12px; border-radius:8px; display:inline-block; font-weight:bold;">Deposit 100 Ksh Now</a>
         </div>
     </div>
 </div>
@@ -137,7 +137,6 @@ function markVideoFinished(videoId) {
     }
 }
 
-
 function claimReward(videoId) {
     const btn = document.getElementById("btn-" + videoId);
     btn.disabled = true;
@@ -156,13 +155,11 @@ function claimReward(videoId) {
             btn.className = "btn-watched";
             btn.disabled = true;
             
-            // Update displayed balance dynamically
             const balanceEl = document.getElementById("user-balance");
             if (balanceEl) {
                 balanceEl.innerText = data.new_balance.toFixed(2);
             }
 
-            // Update status badge container
             const statusContainer = document.getElementById("status-container-" + videoId);
             if (statusContainer) {
                 statusContainer.innerHTML = `
@@ -170,9 +167,8 @@ function claimReward(videoId) {
                     <span style="font-size: 12px; color: #38bdf8; margin-left: 8px;">(Reward Claimed • Replay Freely)</span>
                 `;
             }
-            // Removed the alert popup here so it's clean and seamless!
         } else {
-            alert(data.message); // Keep error alerts just in case something goes wrong
+            alert(data.message);
             btn.disabled = false;
             btn.innerText = "Claim 5 Ksh 🎁";
         }
@@ -183,24 +179,5 @@ function claimReward(videoId) {
         btn.innerText = "Claim 5 Ksh 🎁";
     });
 }
-
-
-
-
-
-
-
-function closeDepositModal() {
-    const modal = document.getElementById("depositModal");
-    if (modal) modal.style.display = "none";
-}
 </script>
-
-
-
-
-
-
-
 </body>
-</html>
