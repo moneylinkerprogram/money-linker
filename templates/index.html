@@ -184,6 +184,7 @@
         <a href="/profile" class="nav-item">My profile</a>
     </div>
 
+
     <!-- PWA SERVICE WORKER & MANUAL INSTALL LOGIC -->
     <script>
         // Register Service Worker
@@ -198,11 +199,24 @@
         let deferredPrompt = null;
         const manualInstallBtn = document.getElementById('manual-install-btn');
 
+        // Check if the app is ALREADY installed / running in standalone mode
+        const isInstalled = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+
+        if (isInstalled && manualInstallBtn) {
+            // Hide the download button completely if already installed
+            manualInstallBtn.style.display = 'none';
+        }
+
         window.addEventListener('beforeinstallprompt', (e) => {
             // Prevent default mini-infobar
             e.preventDefault();
             deferredPrompt = e;
             console.log('Install prompt captured successfully!');
+            
+            // If not installed, show the button when event fires
+            if (!isInstalled && manualInstallBtn) {
+                manualInstallBtn.style.display = 'inline-block';
+            }
         });
 
         if (manualInstallBtn) {
@@ -217,11 +231,24 @@
                     }
                     deferredPrompt = null;
                 } else {
-                    // Fallback when testing over local IP (HTTP) where browser blocks auto prompt
+                    // Fallback alert
                     alert("To install this app, tap your browser's menu (three dots in the top right) and select 'Install app' or 'Add to Home screen'.");
                 }
             });
         }
     </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
 </body>
 </html>
