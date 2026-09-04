@@ -176,39 +176,54 @@
     <a href="/profile" class="nav-item">My profile</a>
 </div>
 
-<!-- PWA SERVICE WORKER & MANUAL INSTALL LOGIC -->
+
+
+<!-- TOP BAR WITH PERMANENT INSTALL BUTTON -->
+<div class="top-bar">
+    <h1><span>Money</span> Linker</h1>
+    <div style="display: flex; gap: 8px; align-items: center;">
+        <button id="manual-install-btn" style="background: #10b981; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: bold; cursor: pointer;">Download App</button>
+        <a href="/logout" class="logout-top-btn">Log Out</a>
+    </div>
+</div>
+
 <script>
-    // Register Service Worker
+    // 1. Register Service Worker with error logging
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', function() {
-            navigator.serviceWorker.register("{{ url_for('static', filename='sw.js') }}");
+            navigator.serviceWorker.register("{{ url_for('static', filename='sw.js') }}")
+                .then(reg => console.log('SW Registered!', reg.scope))
+                .catch(err => console.log('SW Failed:', err));
         });
     }
 
     let deferredPrompt;
     const manualInstallBtn = document.getElementById('manual-install-btn');
 
+    // 2. Catch the install prompt
     window.addEventListener('beforeinstallprompt', (e) => {
-        // Prevent Chrome's auto-infobar
         e.preventDefault();
         deferredPrompt = e;
-        
-        // Reveal the "Download App" button in the top bar
-        manualInstallBtn.style.display = 'block';
+        console.log('beforeinstallprompt event fired successfully!');
     });
 
+    // 3. When clicked, trigger prompt or explain why it's not ready
     manualInstallBtn.addEventListener('click', async () => {
         if (deferredPrompt) {
             deferredPrompt.prompt();
             const { outcome } = await deferredPrompt.userChoice;
-            if (outcome === 'accepted') {
-                console.log('User accepted the install prompt');
-                manualInstallBtn.style.display = 'none';
-            }
+            console.log(`User response to install prompt: ${outcome}`);
             deferredPrompt = null;
+        } else {
+            alert("Chrome hasn't allowed installation yet. Make sure you are using HTTPS, your service worker is active, and try refreshing or opening an Incognito tab.");
         }
     });
 </script>
+
+
+
+
+
 
 </body>
 </html>
