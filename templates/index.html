@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Money Linker - Home</title>
+    <!-- PWA Manifest & Theme Integration -->
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <meta name="theme-color" content="#10b981">
     <style>
         * {
             box-sizing: border-box;
@@ -89,6 +92,58 @@
             font-size: 12px;
             color: #94a3b8;
         }
+        /* CUSTOM APP INSTALL BANNER */
+        #install-banner {
+            display: none;
+            position: fixed;
+            bottom: 80px;
+            left: 15px;
+            right: 15px;
+            background: #1e293b;
+            color: #ffffff;
+            padding: 16px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            z-index: 2000;
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            animation: slideUp 0.3s ease-out;
+        }
+        #install-banner h3 {
+            font-size: 16px;
+            margin-bottom: 5px;
+            color: #10b981;
+        }
+        #install-banner p {
+            font-size: 13px;
+            color: #cbd5e1;
+            margin-bottom: 12px;
+        }
+        .install-actions {
+            display: flex;
+            gap: 10px;
+        }
+        .install-btn {
+            background: #10b981;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            flex: 1;
+        }
+        .dismiss-btn {
+            background: #475569;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        @keyframes slideUp {
+            from { transform: translateY(100px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
         /* FIXED BOTTOM NAVIGATION BAR */
         .bottom-nav {
             position: fixed;
@@ -162,6 +217,16 @@
     </div>
 </div>
 
+<!-- CUSTOM INSTALL PROMPT BANNER -->
+<div id="install-banner">
+    <h3>Download Money Linker App</h3>
+    <p>Install this app on your device for quick access and a better experience straight from your app drawer.</p>
+    <div class="install-actions">
+        <button id="install-button" class="install-btn">Install App</button>
+        <button id="dismiss-button" class="dismiss-btn">Later</button>
+    </div>
+</div>
+
 <!-- FIXED BOTTOM NAVIGATION BAR -->
 <div class="bottom-nav">
     <a href="/" class="nav-item active">Home</a>
@@ -170,7 +235,48 @@
     <a href="/profile" class="nav-item">My profile</a>
 </div>
 
+<!-- PWA SERVICE WORKER & INSTALL PROMPT LOGIC -->
+<script>
+    // Register Service Worker
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+            navigator.serviceWorker.register("{{ url_for('static', filename='sw.js') }}");
+        });
+    }
+
+    // Capture install prompt and show custom banner
+    let deferredPrompt;
+    const installBanner = document.getElementById('install-banner');
+    const installButton = document.getElementById('install-button');
+    const dismissButton = document.getElementById('dismiss-button');
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+        // Prevent Chrome's automatic small infobar
+        e.preventDefault();
+        deferredPrompt = e;
+        
+        // Show our custom notification box after user logs in and visits home
+        setTimeout(() => {
+            installBanner.style.display = 'block';
+        }, 1000);
+    });
+
+    installButton.addEventListener('click', async () => {
+        if (deferredPrompt) {
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            if (outcome === 'accepted') {
+                console.log('User accepted the install prompt');
+            }
+            deferredPrompt = null;
+            installBanner.style.display = 'none';
+        }
+    });
+
+    dismissButton.addEventListener('click', () => {
+        installBanner.style.display = 'none';
+    });
+</script>
+
 </body>
 </html>
-o
-
