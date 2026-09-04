@@ -5,8 +5,13 @@ import random
 import smtplib
 import string
 import sqlite3
+
 import datetime
-from flask import Flask, url_for, flash, redirect, render_template, request, session
+
+
+from flask import Flask, url_for, flash, redirect, render_template, request, session, send_from_directory, jsonify
+
+
 import requests
 import psycopg2
 from urllib.parse import urlparse
@@ -232,7 +237,7 @@ def generate_unique_code():
     code = "".join(
         random.choices(string.ascii_uppercase + string.digits, k=6)
     )
-    cursor.execute("SELECT * FROM users WHERE referral_code = %s", (code,))
+    cursor.execute("SELECT * FROM users WHERE referral_code = ?", (code,))
     if not cursor.fetchone():
       conn.close()
       return code
@@ -251,7 +256,7 @@ def home():
 
   conn = get_db_connection()
   cursor = conn.cursor()
-  cursor.execute("SELECT * FROM users WHERE email = %s", (session["user"],))
+  cursor.execute("SELECT * FROM users WHERE email = ?", (session["user"],))
   user = cursor.fetchone()
 
   cursor.execute("SELECT * FROM videos ORDER BY id DESC")
@@ -271,7 +276,7 @@ def profile():
 
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM users WHERE email = %s OR phone = %s", (session["user"], session["user"]))
+    cursor.execute("SELECT * FROM users WHERE email = ? OR phone = ?", (session["user"], session["user"]))
     user = cursor.fetchone()
 
     if not user:
@@ -289,7 +294,7 @@ def profile():
         if report_message:
             cursor.execute("""
                 INSERT INTO reports (user_id, email, phone, message) 
-                VALUES (%s, %s, %s, %s)
+                VALUES (?, %s, %s, %s)
             """, (user_id, user_email, user_phone, report_message))
             conn.commit()
             flash("Your report has been sent to the admin successfully!", "success")
@@ -298,7 +303,7 @@ def profile():
         return redirect(url_for("profile"))
 
     cursor.execute(
-        "SELECT COUNT(*) FROM users WHERE referred_by = %s", (my_ref_code,)
+        "SELECT COUNT(*) FROM users WHERE referred_by = ?", (my_ref_code,)
     )
     ref_count = cursor.fetchone()[0]
     conn.close()
@@ -408,7 +413,7 @@ def admin_add_video():
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute(
-        "INSERT INTO videos (title, video_type, video_source, duration) VALUES (%s, %s, %s, %s)",
+        "INSERT INTO videos (title, video_type, video_source, duration) VALUES (?, %s, %s, %s)",
         (title, video_type, video_source_value, duration),
     )
     conn.commit()
@@ -446,7 +451,7 @@ def admin_videos():
         video_source = filename
 
     cursor.execute(
-        "INSERT INTO videos (title, video_type, video_source, duration) VALUES (%s, %s, %s, %s)",
+        "INSERT INTO videos (title, video_type, video_source, duration) VALUES (?, %s, %s, %s)",
         (title, upload_method, video_source, duration),
     )
     conn.commit()
@@ -473,7 +478,7 @@ def delete_video(video_id):
 
   conn = get_db_connection()
   cursor = conn.cursor()
-  cursor.execute("DELETE FROM videos WHERE id = %s", (video_id,))
+  cursor.execute("DELETE FROM videos WHERE id = ?", (video_id,))
   conn.commit()
   conn.close()
   flash("Video deleted successfully!", "success")
@@ -509,29 +514,29 @@ def admin_requests():
 
         if req_type == "deposit":
             if action == "delete":
-                cursor.execute("DELETE FROM deposit_requests WHERE id = %s", (req_id,))
+                cursor.execute("DELETE FROM deposit_requests WHERE id = ?", (req_id,))
                 conn.commit()
             elif action == "approve":
                 try:
                     actual_amount = float(verified_amount)
-                    cursor.execute("SELECT user_id, status FROM deposit_requests WHERE id = %s", (req_id,))
+                    cursor.execute("SELECT user_id, status FROM deposit_requests WHERE id = ?", (req_id,))
                     row = cursor.fetchone()
                     if row and row[1] != 'Approved':
                         user_id = row[0]
                         # 1. Add deposit amount to user's balance
-                        cursor.execute("UPDATE users SET balance = balance + %s WHERE id = %s", (actual_amount, user_id))
-                        cursor.execute("UPDATE deposit_requests SET status = 'Approved', amount = %s WHERE id = %s", (actual_amount, req_id))
+                        cursor.execute("UPDATE users SET balance = balance + ? WHERE id = ?", (actual_amount, user_id))
+                        cursor.execute("UPDATE deposit_requests SET status = 'Approved', amount = ? WHERE id = ?", (actual_amount, req_id))
                         
                         # 2. Check how many approved deposits this user has had
                         cursor.execute("""
                             SELECT COUNT(*) FROM deposit_requests 
-                            WHERE user_id = %s AND status = 'Approved'
+                            WHERE user_id = ? AND status = 'Approved'
                         """, (user_id,))
                         approved_count = cursor.fetchone()[0]
 
                         # 3. If this is their first approved deposit and >= 100 Ksh, reward the referrer!
                         if approved_count == 1 and actual_amount >= 100:
-                            cursor.execute("SELECT referred_by FROM users WHERE id = %s", (user_id,))
+                            cursor.execute("SELECT referred_by FROM users WHERE id = ?", (user_id,))
                             ref_row = cursor.fetchone()
 
                             if ref_row and ref_row[0]:
@@ -539,7 +544,7 @@ def admin_requests():
                                 if referrer_code and referrer_code != "System":
                                     cursor.execute("""
                                         UPDATE users SET balance = balance + 40 
-                                        WHERE TRIM(referral_code) = %s
+                                        WHERE TRIM(referral_code) = ?
                                     """, (referrer_code,))
 
                         conn.commit()
@@ -548,17 +553,17 @@ def admin_requests():
 
         elif req_type == "withdrawal":
             if action == "delete":
-                cursor.execute("DELETE FROM withdrawal_requests WHERE id = %s", (req_id,))
+                cursor.execute("DELETE FROM withdrawal_requests WHERE id = ?", (req_id,))
                 conn.commit()
             elif action == "approve":
                 try:
                     actual_amount = float(verified_amount)
-                    cursor.execute("SELECT user_id, status FROM withdrawal_requests WHERE id = %s", (req_id,))
+                    cursor.execute("SELECT user_id, status FROM withdrawal_requests WHERE id = ?", (req_id,))
                     row = cursor.fetchone()
                     if row and row[1] != 'Approved':
                         user_id = row[0]
-                        cursor.execute("UPDATE users SET balance = balance - %s WHERE id = %s", (actual_amount, user_id))
-                        cursor.execute("UPDATE withdrawal_requests SET status = 'Approved', amount = %s WHERE id = %s", (actual_amount, req_id))
+                        cursor.execute("UPDATE users SET balance = balance - ? WHERE id = ?", (actual_amount, user_id))
+                        cursor.execute("UPDATE withdrawal_requests SET status = 'Approved', amount = ? WHERE id = ?", (actual_amount, req_id))
                         conn.commit()
                 except Exception as e:
                     print("Error approving withdrawal:", e)
@@ -603,7 +608,7 @@ def approve_deposit(deposit_id):
     cursor = conn.cursor()
 
     # Get deposit details
-    cursor.execute("SELECT user_id, amount, status FROM deposit_requests WHERE id = %s", (deposit_id,))
+    cursor.execute("SELECT user_id, amount, status FROM deposit_requests WHERE id = ?", (deposit_id,))
     dep = cursor.fetchone()
 
     if not dep:
@@ -614,21 +619,21 @@ def approve_deposit(deposit_id):
 
     if status != "Approved":
         # 1. Mark deposit as approved
-        cursor.execute("UPDATE deposit_requests SET status = 'Approved' WHERE id = %s", (deposit_id,))
+        cursor.execute("UPDATE deposit_requests SET status = 'Approved' WHERE id = ?", (deposit_id,))
 
         # 2. Add deposit amount to the user's balance
-        cursor.execute("UPDATE users SET balance = balance + %s WHERE id = %s", (amount, user_id))
+        cursor.execute("UPDATE users SET balance = balance + ? WHERE id = ?", (amount, user_id))
 
         # 3. Check how many approved deposits this user has had
         cursor.execute("""
             SELECT COUNT(*) FROM deposit_requests 
-            WHERE user_id = %s AND status = 'Approved'
+            WHERE user_id = ? AND status = 'Approved'
         """, (user_id,))
         approved_count = cursor.fetchone()[0]
 
         # 4. If this is their first approved deposit and >= 100 Ksh
         if approved_count == 1 and amount >= 100:
-            cursor.execute("SELECT referred_by FROM users WHERE id = %s", (user_id,))
+            cursor.execute("SELECT referred_by FROM users WHERE id = ?", (user_id,))
             ref_row = cursor.fetchone()
 
             if ref_row and ref_row[0]:
@@ -639,7 +644,7 @@ def approve_deposit(deposit_id):
                     # Credit 40 Ksh to the referrer
                     cursor.execute("""
                         UPDATE users SET balance = balance + 40 
-                        WHERE TRIM(referral_code) = %s
+                        WHERE TRIM(referral_code) = ?
                     """, (referrer_code,))
 
         conn.commit()
@@ -704,7 +709,7 @@ def deposit():
     cursor = conn.cursor()
 
     cursor.execute(
-        "SELECT id FROM users WHERE email = %s OR phone = %s",
+        "SELECT id FROM users WHERE email = ? OR phone = ?",
         (session["user"], session["user"]),
     )
     user = cursor.fetchone()
@@ -720,7 +725,7 @@ def deposit():
         mpesa_code = request.form.get("mpesa_code")
 
         cursor.execute(
-            "INSERT INTO deposit_requests (user_id, amount, mpesa_code, status) VALUES (%s, %s, %s, 'Pending')",
+            "INSERT INTO deposit_requests (user_id, amount, mpesa_code, status) VALUES (?, %s, %s, 'Pending')",
             (user_id, amount, mpesa_code)
         )
         conn.commit()
@@ -739,7 +744,7 @@ def withdraw():
     cursor = conn.cursor()
     
     cursor.execute(
-        "SELECT id, balance FROM users WHERE email = %s OR phone = %s",
+        "SELECT id, balance FROM users WHERE email = ? OR phone = ?",
         (session["user"], session["user"]),
     )
     user_row = cursor.fetchone()
@@ -765,13 +770,13 @@ def withdraw():
             
             cursor.execute("""
                 INSERT INTO withdrawal_requests (user_id, amount, phone, status)
-                VALUES (%s, %s, %s, 'Pending')
+                VALUES (?, %s, %s, 'Pending')
             """, (user_id, amount, phone))
             conn.commit()
         except Exception as e:
             print("Withdrawal error:", e)
 
-    cursor.execute("SELECT id, amount, phone FROM withdrawal_requests WHERE user_id = %s AND status = 'Pending'", (user_id,))
+    cursor.execute("SELECT id, amount, phone FROM withdrawal_requests WHERE user_id = ? AND status = 'Pending'", (user_id,))
     pending_request = cursor.fetchone()
     
     conn.close()
@@ -792,13 +797,13 @@ def cancel_withdrawal():
     cursor = conn.cursor()
     
     cursor.execute(
-        "SELECT id FROM users WHERE email = %s OR phone = %s",
+        "SELECT id FROM users WHERE email = ? OR phone = ?",
         (session["user"], session["user"]),
     )
     user_row = cursor.fetchone()
     if user_row:
         user_id = user_row[0]
-        cursor.execute("DELETE FROM withdrawal_requests WHERE id = %s AND user_id = %s AND status = 'Pending'", (req_id, user_id))
+        cursor.execute("DELETE FROM withdrawal_requests WHERE id = ? AND user_id = ? AND status = 'Pending'", (req_id, user_id))
         conn.commit()
         
     conn.close()
@@ -813,7 +818,7 @@ def account():
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute(
-        "SELECT balance FROM users WHERE email = %s OR phone = %s",
+        "SELECT balance FROM users WHERE email = ? OR phone = ?",
         (session["user"], session["user"]),
     )
     user = cursor.fetchone()
@@ -831,7 +836,7 @@ def invest():
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute(
-        "SELECT balance FROM users WHERE email = %s OR phone = %s",
+        "SELECT balance FROM users WHERE email = ? OR phone = ?",
         (session["user"], session["user"]),
     )
     user = cursor.fetchone()
@@ -861,7 +866,7 @@ def login():
       referred_by = None
       if user_count > 0:
         cursor.execute(
-            "SELECT * FROM users WHERE referral_code = %s", (ref_code_input,)
+            "SELECT * FROM users WHERE referral_code = ?", (ref_code_input,)
         )
         referrer = cursor.fetchone()
         if not referrer:
@@ -878,7 +883,7 @@ def login():
 
       try:
         cursor.execute(
-            "INSERT INTO users (email, phone, password, referral_code, referred_by) VALUES (%s, %s, %s, %s, %s)",
+            "INSERT INTO users (email, phone, password, referral_code, referred_by) VALUES (?, %s, %s, %s, %s)",
             (email, phone, password, new_ref_code, referred_by),
         )
         conn.commit()
@@ -897,7 +902,7 @@ def login():
       conn = get_db_connection()
       cursor = conn.cursor()
       cursor.execute(
-          "SELECT * FROM users WHERE (email = %s OR phone = %s) AND password = %s",
+          "SELECT * FROM users WHERE (email = ? OR phone = ?) AND password = ?",
           (identifier, identifier, password),
       )
       user = cursor.fetchone()
@@ -924,7 +929,7 @@ def my_videos():
     cursor = conn.cursor()
 
     cursor.execute(
-        "SELECT id, balance FROM users WHERE email = %s OR phone = %s",
+        "SELECT id, balance FROM users WHERE email = ? OR phone = ?",
         (session["user"], session["user"]),
     )
     user = cursor.fetchone()
@@ -938,7 +943,7 @@ def my_videos():
     # Check total approved deposits for this user
     cursor.execute("""
         SELECT SUM(amount) FROM deposit_requests 
-        WHERE user_id = %s AND status = 'Approved'
+        WHERE user_id = ? AND status = 'Approved'
     """, (user_id,))
     dep_row = cursor.fetchone()
     total_deposited = dep_row[0] if dep_row and dep_row[0] else 0.0
@@ -959,7 +964,7 @@ def my_videos():
         daily_selection = []
 
     cursor.execute(
-        "SELECT video_id FROM user_watched_videos WHERE user_id = %s AND watched_date = %s",
+        "SELECT video_id FROM user_watched_videos WHERE user_id = ? AND watched_date = ?",
         (user_id, today_str),
     )
     watched_rows = cursor.fetchall()
@@ -1006,7 +1011,7 @@ def complete_video(video_id):
         cursor = conn.cursor()
 
         cursor.execute(
-            "SELECT id FROM users WHERE email = %s OR phone = %s",
+            "SELECT id FROM users WHERE email = ? OR phone = ?",
             (session["user"], session["user"]),
         )
         user = cursor.fetchone()
@@ -1018,22 +1023,22 @@ def complete_video(video_id):
         today_str = datetime.date.today().isoformat()
 
         cursor.execute(
-            "SELECT * FROM user_watched_videos WHERE user_id = %s AND video_id = %s AND watched_date = %s",
+            "SELECT * FROM user_watched_videos WHERE user_id = ? AND video_id = ? AND watched_date = ?",
             (user_id, video_id, today_str),
         )
         already_watched = cursor.fetchone()
 
         if not already_watched:
             cursor.execute(
-                "INSERT INTO user_watched_videos (user_id, video_id, watched_date) VALUES (%s, %s, %s)",
+                "INSERT INTO user_watched_videos (user_id, video_id, watched_date) VALUES (?, %s, %s)",
                 (user_id, video_id, today_str),
             )
             cursor.execute(
-                "UPDATE users SET balance = balance + 5.0 WHERE id = %s", (user_id,)
+                "UPDATE users SET balance = balance + 5.0 WHERE id = ?", (user_id,)
             )
             conn.commit()
 
-            cursor.execute("SELECT balance FROM users WHERE id = %s", (user_id,))
+            cursor.execute("SELECT balance FROM users WHERE id = ?", (user_id,))
             updated_user = cursor.fetchone()
             new_balance = updated_user[0] if updated_user else 0
 
@@ -1060,7 +1065,7 @@ def forgot_password():
     email = request.form.get("reset_email")
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM users WHERE email = %s", (email,))
+    cursor.execute("SELECT * FROM users WHERE email = ?", (email,))
     user = cursor.fetchone()
     conn.close()
 
@@ -1100,7 +1105,7 @@ def reset_password():
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute(
-        "UPDATE users SET password = %s WHERE email = %s", (new_password, email)
+        "UPDATE users SET password = ? WHERE email = ?", (new_password, email)
     )
     conn.commit()
     conn.close()

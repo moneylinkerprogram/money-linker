@@ -4,9 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Money Linker - Home</title>
+    
     <!-- PWA Manifest & Theme Integration -->
     <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
     <meta name="theme-color" content="#10b981">
+    
     <style>
         * {
             box-sizing: border-box;
@@ -24,6 +26,7 @@
             overflow-x: hidden;
             min-height: 100vh;
         }
+        
         /* TOP BAR WITH LOG OUT AND INSTALL BUTTON */
         .top-bar {
             position: fixed;
@@ -60,12 +63,14 @@
         .logout-top-btn:hover {
             background: #dc2626;
         }
+        
         /* MAIN CONTENT FEED CONTAINER */
         .main-container {
             max-width: 600px;
             margin: 80px auto 20px auto;
             padding: 0 15px;
         }
+        
         /* VIDEO FEED STYLING */
         .video-feed {
             display: flex;
@@ -92,6 +97,7 @@
             font-size: 12px;
             color: #94a3b8;
         }
+        
         /* FIXED BOTTOM NAVIGATION BAR */
         .bottom-nav {
             position: fixed;
@@ -124,110 +130,98 @@
 </head>
 <body>
 
-<!-- TOP BAR WITH LOG OUT AND INSTALL BUTTON -->
-<div class="top-bar">
-    <h1><span>Money</span> Linker</h1>
-    <div style="display: flex; gap: 8px; align-items: center;">
-        <button id="manual-install-btn" style="display: none; background: #10b981; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: bold; cursor: pointer;">Download App</button>
-        <a href="/logout" class="logout-top-btn">Log Out</a>
+    <!-- TOP BAR WITH LOG OUT AND INSTALL BUTTON -->
+    <div class="top-bar">
+        <h1><span>Money</span> Linker</h1>
+        <div style="display: flex; gap: 8px; align-items: center;">
+            <!-- Always visible on local testing via inline-block -->
+            <button id="manual-install-btn" style="display: inline-block; background: #10b981; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: bold; cursor: pointer;">Download App</button>
+            <a href="/logout" class="logout-top-btn">Log Out</a>
+        </div>
     </div>
-</div>
 
-<div class="main-container">
-    <!-- DYNAMIC VIDEO FEED FROM ADMIN DATABASE -->
-    <div class="video-feed">
-        {% for video in videos %}
-        <div class="video-card">
-            <div class="video-thumbnail" style="background: #000; height: auto;">
-                {% if video[2] == 'link' %}
-                    <!-- External Link view -->
-                    <div style="position:relative; padding-bottom:56.23%; height:0; overflow:hidden; margin-bottom: 10px;">
-                        <iframe src="{{ video[3] }}" style="position:absolute; top:0; left:0; width:100%; height:100%;" frameborder="0" allowfullscreen></iframe>
+    <!-- MAIN CONTAINER -->
+    <div class="main-container">
+        <!-- DYNAMIC VIDEO FEED FROM ADMIN DATABASE -->
+        <div class="video-feed">
+            {% for video in videos %}
+            <div class="video-card">
+                <div class="video-thumbnail" style="background: #000; height: auto;">
+                    {% if video[2] == 'link' %}
+                        <!-- External Link view -->
+                        <div style="position:relative; padding-bottom:56.23%; height:0; overflow:hidden; margin-bottom: 10px;">
+                            <iframe src="{{ video[3] }}" style="position:absolute; top:0; left:0; width:100%; height:100%;" frameborder="0" allowfullscreen></iframe>
+                        </div>
+                    {% else %}
+                        <!-- Native HTML5 Player for File Uploads -->
+                        <video width="100%" height="200" controls style="border-radius: 6px; margin-bottom: 10px;">
+                            <source src="{{ url_for('static', filename='uploads/' + video[3]) }}" type="video/mp4">
+                            Your browser does not support the video tag.
+                        </video>
+                    {% endif %}
+                </div>
+                <div class="video-info">
+                    <h4>{{ video[1] }}</h4>
+                    <div class="video-meta">
+                        <span>Earning Reward Eligible</span>
+                        <span class="duration-badge">{{ video[4] }} mins</span>
                     </div>
-                {% else %}
-                    <!-- Native HTML5 Player for File Uploads -->
-                    <video width="100%" height="200" controls style="border-radius: 6px; margin-bottom: 10px;">
-                        <source src="{{ url_for('static', filename='uploads/' + video[3]) }}" type="video/mp4">
-                        Your browser does not support the video tag.
-                    </video>
-                {% endif %}
-            </div>
-            <div class="video-info">
-                <h4>{{ video[1] }}</h4>
-                <div class="video-meta">
-                    <span>Earning Reward Eligible</span>
-                    <span class="duration-badge">{{ video[4] }} mins</span>
                 </div>
             </div>
+            {% else %}
+            <div style="background: rgba(255, 255, 255, 0.95); padding: 30px; border-radius: 10px; text-align: center; color: #475569;">
+                <p>No videos available right now. Upload some from your admin panel!</p>
+            </div>
+            {% endfor %}
         </div>
-        {% else %}
-        <div style="background: rgba(255, 255, 255, 0.95); padding: 30px; border-radius: 10px; text-align: center; color: #475569;">
-            <p>No videos available right now. Upload some from your admin panel!</p>
-        </div>
-        {% endfor %}
     </div>
-</div>
 
-<!-- FIXED BOTTOM NAVIGATION BAR -->
-<div class="bottom-nav">
-    <a href="/" class="nav-item active">Home</a>
-    <a href="/my-videos" class="nav-item">My videos</a>
-    <a href="/account" class="nav-item">Account</a>
-    <a href="/profile" class="nav-item">My profile</a>
-</div>
-
-
-
-<!-- TOP BAR WITH PERMANENT INSTALL BUTTON -->
-<div class="top-bar">
-    <h1><span>Money</span> Linker</h1>
-    <div style="display: flex; gap: 8px; align-items: center;">
-        <button id="manual-install-btn" style="background: #10b981; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: bold; cursor: pointer;">Download App</button>
-        <a href="/logout" class="logout-top-btn">Log Out</a>
+    <!-- FIXED BOTTOM NAVIGATION BAR -->
+    <div class="bottom-nav">
+        <a href="/" class="nav-item active">Home</a>
+        <a href="/my-videos" class="nav-item">My videos</a>
+        <a href="/account" class="nav-item">Account</a>
+        <a href="/profile" class="nav-item">My profile</a>
     </div>
-</div>
-<!-- PWA SERVICE WORKER & MANUAL INSTALL LOGIC -->
-<script>
-    // Register Service Worker
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', function() {
-            navigator.serviceWorker.register("{{ url_for('static', filename='sw.js') }}")
-                .then(() => console.log('Service Worker Registered'))
-                .catch(err => console.log('SW Error:', err));
-        });
-    }
 
-    let deferredPrompt = null;
-    const manualInstallBtn = document.getElementById('manual-install-btn');
-
-    window.addEventListener('beforeinstallprompt', (e) => {
-        // Prevent default mini-infobar
-        e.preventDefault();
-        deferredPrompt = e;
-        console.log('Install prompt captured successfully!');
-    });
-
-    manualInstallBtn.addEventListener('click', async () => {
-        if (deferredPrompt) {
-            // Prompt is ready, trigger it directly!
-            deferredPrompt.prompt();
-            const { outcome } = await deferredPrompt.userChoice;
-            console.log(`User choice: ${outcome}`);
-            if (outcome === 'accepted') {
-                manualInstallBtn.style.display = 'none';
-            }
-            deferredPrompt = null;
-        } else {
-            // Fallback if Chrome hasn't fired the event yet
-            alert("To install this app, tap Chrome's menu (three dots in the top right) and select 'Install app' or 'Add to Home screen'.");
+    <!-- PWA SERVICE WORKER & MANUAL INSTALL LOGIC -->
+    <script>
+        // Register Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register("{{ url_for('static', filename='sw.js') }}")
+                    .then(() => console.log('Service Worker Registered'))
+                    .catch(err => console.log('SW Error:', err));
+            });
         }
-    });
-</script>
 
+        let deferredPrompt = null;
+        const manualInstallBtn = document.getElementById('manual-install-btn');
 
+        window.addEventListener('beforeinstallprompt', (e) => {
+            // Prevent default mini-infobar
+            e.preventDefault();
+            deferredPrompt = e;
+            console.log('Install prompt captured successfully!');
+        });
 
-
-
-
+        if (manualInstallBtn) {
+            manualInstallBtn.addEventListener('click', async () => {
+                if (deferredPrompt) {
+                    // Prompt is ready, trigger it directly!
+                    deferredPrompt.prompt();
+                    const { outcome } = await deferredPrompt.userChoice;
+                    console.log(`User choice: ${outcome}`);
+                    if (outcome === 'accepted') {
+                        manualInstallBtn.style.display = 'none';
+                    }
+                    deferredPrompt = null;
+                } else {
+                    // Fallback when testing over local IP (HTTP) where browser blocks auto prompt
+                    alert("To install this app, tap your browser's menu (three dots in the top right) and select 'Install app' or 'Add to Home screen'.");
+                }
+            });
+        }
+    </script>
 </body>
 </html>
