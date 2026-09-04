@@ -884,7 +884,7 @@ def login():
         conn.commit()
         conn.close()
         flash("Account created successfully! Please sign in.", "success")
-      except sqlite3.IntegrityError:
+      except Exception:
         conn.close()
         flash("Email or Phone number already registered.", "danger")
 
