@@ -294,7 +294,7 @@ def profile():
         if report_message:
             cursor.execute("""
                 INSERT INTO reports (user_id, email, phone, message) 
-                VALUES (?, %s, %s, %s)
+                VALUES (%s, %s, %s, %s)
             """, (user_id, user_email, user_phone, report_message))
             conn.commit()
             flash("Your report has been sent to the admin successfully!", "success")
@@ -413,7 +413,7 @@ def admin_add_video():
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute(
-        "INSERT INTO videos (title, video_type, video_source, duration) VALUES (?, %s, %s, %s)",
+        "INSERT INTO videos (title, video_type, video_source, duration) VALUES (%s, %s, %s, %s)",
         (title, video_type, video_source_value, duration),
     )
     conn.commit()
@@ -451,7 +451,7 @@ def admin_videos():
         video_source = filename
 
     cursor.execute(
-        "INSERT INTO videos (title, video_type, video_source, duration) VALUES (?, %s, %s, %s)",
+        "INSERT INTO videos (title, video_type, video_source, duration) VALUES (%s, %s, %s, %s)",
         (title, upload_method, video_source, duration),
     )
     conn.commit()
@@ -725,7 +725,7 @@ def deposit():
         mpesa_code = request.form.get("mpesa_code")
 
         cursor.execute(
-            "INSERT INTO deposit_requests (user_id, amount, mpesa_code, status) VALUES (?, %s, %s, 'Pending')",
+            "INSERT INTO deposit_requests (user_id, amount, mpesa_code, status) VALUES (%s, %s, %s, 'Pending')",
             (user_id, amount, mpesa_code)
         )
         conn.commit()
@@ -770,7 +770,7 @@ def withdraw():
             
             cursor.execute("""
                 INSERT INTO withdrawal_requests (user_id, amount, phone, status)
-                VALUES (?, %s, %s, 'Pending')
+                VALUES (%s, %s, %s, 'Pending')
             """, (user_id, amount, phone))
             conn.commit()
         except Exception as e:
@@ -883,7 +883,7 @@ def login():
 
       try:
         cursor.execute(
-            "INSERT INTO users (email, phone, password, referral_code, referred_by) VALUES (?, %s, %s, %s, %s)",
+            "INSERT INTO users (email, phone, password, referral_code, referred_by) VALUES (%s, %s, %s, %s, %s)",
             (email, phone, password, new_ref_code, referred_by),
         )
         conn.commit()
@@ -1030,7 +1030,7 @@ def complete_video(video_id):
 
         if not already_watched:
             cursor.execute(
-                "INSERT INTO user_watched_videos (user_id, video_id, watched_date) VALUES (?, %s, %s)",
+                "INSERT INTO user_watched_videos (user_id, video_id, watched_date) VALUES (%s, %s, %s)",
                 (user_id, video_id, today_str),
             )
             cursor.execute(
