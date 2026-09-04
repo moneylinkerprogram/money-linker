@@ -186,36 +186,40 @@
         <a href="/logout" class="logout-top-btn">Log Out</a>
     </div>
 </div>
-
+<!-- PWA SERVICE WORKER & MANUAL INSTALL LOGIC -->
 <script>
-    // 1. Register Service Worker with error logging
+    // Register Service Worker
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', function() {
             navigator.serviceWorker.register("{{ url_for('static', filename='sw.js') }}")
-                .then(reg => console.log('SW Registered!', reg.scope))
-                .catch(err => console.log('SW Failed:', err));
+                .then(() => console.log('Service Worker Registered'))
+                .catch(err => console.log('SW Error:', err));
         });
     }
 
-    let deferredPrompt;
+    let deferredPrompt = null;
     const manualInstallBtn = document.getElementById('manual-install-btn');
 
-    // 2. Catch the install prompt
     window.addEventListener('beforeinstallprompt', (e) => {
+        // Prevent default mini-infobar
         e.preventDefault();
         deferredPrompt = e;
-        console.log('beforeinstallprompt event fired successfully!');
+        console.log('Install prompt captured successfully!');
     });
 
-    // 3. When clicked, trigger prompt or explain why it's not ready
     manualInstallBtn.addEventListener('click', async () => {
         if (deferredPrompt) {
+            // Prompt is ready, trigger it directly!
             deferredPrompt.prompt();
             const { outcome } = await deferredPrompt.userChoice;
-            console.log(`User response to install prompt: ${outcome}`);
+            console.log(`User choice: ${outcome}`);
+            if (outcome === 'accepted') {
+                manualInstallBtn.style.display = 'none';
+            }
             deferredPrompt = null;
         } else {
-            alert("Chrome hasn't allowed installation yet. Make sure you are using HTTPS, your service worker is active, and try refreshing or opening an Incognito tab.");
+            // Fallback if Chrome hasn't fired the event yet
+            alert("To install this app, tap Chrome's menu (three dots in the top right) and select 'Install app' or 'Add to Home screen'.");
         }
     });
 </script>
